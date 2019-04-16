@@ -1,0 +1,14 @@
+.login-view{
+    display: flex; 
+    width: 20%;
+    justify-content: center; 
+    align-items: 'center'; 
+    background-color: rgba(166, 172, 175, 0.5); 
+    border-radius: 20; 
+    flex-direction: column;
+    padding: 1%;
+}
+
+.btn-item{
+    width: 100%;  
+}

@@ -1,0 +1,42 @@
+.content-dashboard{
+    display: flex ;
+    flex: 1;
+    flex-direction: column;
+    width: 100% ;
+    height: 100%;
+}
+
+.grid-colum{
+    overflow:hidden;
+    border: solid #b6b6b6 1px;
+    margin: 0% 5%;
+    padding: 5% 0%; 
+    border-radius: 5px;   
+}
+
+.icon{
+    margin-left: 5%; 
+    padding: 5%;
+    font-size: 3rem;
+    color: #1890ff;
+    width: 25%;    
+    float: left;
+}
+
+.text{
+    float: left;
+    color: #9a9a9a;
+    text-align: center;
+    width: 50%;
+    height: 100%;
+    font-size: 1rem;  
+}
+
+#number{
+    font-size: 2.5rem;
+    color: black;       
+}
+
+.stadistic{
+    margin-top: 5%;
+}
