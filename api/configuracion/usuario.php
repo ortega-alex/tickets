@@ -200,7 +200,8 @@ if($_GET[accion]=='asignar'){
 
 		$exito=True;
 
-		$sql = mysqli_query($con, "INSERT INTO departamento_puesto(id_puesto, id_departamento, id_usuario, estado, creacion) VALUES('$_POST[puesto]', '$_POST[departamento]', '$_POST[usuario]', '$_POST[activo]', '$fecha')" );
+		$sql = mysqli_query($con, "INSERT INTO departamento_puesto(id_puesto, id_departamento, id_usuario, estado, creacion) 
+								   VALUES('$_POST[puesto]', '$_POST[departamento]', '$_POST[usuario]', '$_POST[activo]', '$fecha')" );
 
 		if(!$sql){
 		  $exito=False;
@@ -592,63 +593,60 @@ if($_GET[accion]=='get_usuarios_departamento_one'){
 
 if($_GET[accion]=='get_tickets_abiertas_usuario'){
 
-
-	$sql = mysqli_query($con,  "SELECT ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, ut.estado, t.descripcion, 
-									   ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, 
-									   p.puesto, d.departamento, us.nombre_completo  
-							    FROM usuario us, usuario_ticket ut, ticket t, departamento_puesto dp, departamento d, puesto p 
-								WHERE t.id_ticket=ut.id_ticket 
-								AND ut.id_usuario=us.id_usuario 
-								AND us.id_usuario=dp.id_usuario 
-								AND dp.id_departamento=d.id_departamento 
-								AND dp.id_puesto=p.id_puesto 
-								AND (ut.estado=0 OR ut.id_calificacion IS NULL) 
-								AND us.id_usuario='$_POST[id_usuario]' 
-								GROUP BY ut.id_usuario_ticket");
-
+	$strQuery = "SELECT a.nombre_completo  ,
+											b.id_usuario_ticket,  b.nivel_prioridad, b.creacion, b.programada, b.fecha_programada, b.info_adicional , b.estado, 
+											c.id_ticket,   c.nombre_ticket,   c.descripcion, 
+												e.departamento ,
+											f.puesto,
+											if ( b.id_tecnico is null , 'Sin Asignar' ,   g.nombre_completo  ) as nombre_tecnico
+								FROM usuario a 
+								inner join usuario_ticket b on a.id_usuario = b.id_usuario 
+								inner join ticket c on b.id_ticket = c.id_ticket 
+								inner join departamento_puesto d on a.id_usuario = d.id_usuario
+								inner join departamento e on d.id_departamento = e.id_departamento 
+								inner join puesto f on d.id_puesto = f.id_puesto 
+								left join usuario g on b.id_tecnico = g.id_usuario
+								where b.estado = 0 OR b.id_calificacion IS NULL 
+								AND a.id_usuario= {$_POST[id_usuario]}
+								GROUP BY b.id_usuario_ticket";
+	$qTemp = mysqli_query($con, $strQuery);
 
 	 //cantidad fases
 	 $exe_p = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM fase WHERE estado=1");
 	 $row_p = mysqli_fetch_assoc($exe_p);
 	 $cantidad_fases = $row_p['NUMBER_ROW'];
 
-
 	//Create an array with the results
 	$results=array();
-	while($v = mysqli_fetch_object($sql)){
+	while($v = mysqli_fetch_object($qTemp)){
 
-		//cantidad fases ticket
-		 $exe_p2 = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM usuario_ticket_fase where id_usuario_ticket=$v->id_usuario_ticket");
-		 $row_p2 = mysqli_fetch_assoc($exe_p2);
-		 $cantidad_fases_ticket = $row_p2['NUMBER_ROW'];
+	//cantidad fases ticket
+		$exe_p2 = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM usuario_ticket_fase where id_usuario_ticket=$v->id_usuario_ticket");
+		$row_p2 = mysqli_fetch_assoc($exe_p2);
+		$cantidad_fases_ticket = $row_p2['NUMBER_ROW'];
 
 
-	$results[] = array(
-	'id_usuario_ticket'=>($v->id_usuario_ticket),
-	'id_ticket'=>($v->id_ticket),
-	'nombre_ticket'=>($v->nombre_ticket),
-	'estado'=>($v->estado),
-	'descripcion'=>($v->descripcion),
-	'nivel_prioridad'=>($v->nivel_prioridad),
-	'creacion'=>($v->creacion),
-	'programada'=>($v->programada),
-	'fecha_programada'=>($v->fecha_programada),
-	'info_adicional'=>($v->info_adicional),
-	'puesto'=>($v->puesto),
-	'departamento'=>($v->departamento),
-	'total_fases'=>($cantidad_fases),
-	'total_fases_ticket'=>($cantidad_fases_ticket),
-	'nombre_completo'=>($v->nombre_completo),
-
-	'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),
-
-	
-	);
-
+		$results[] = array(
+			'id_usuario_ticket'=>($v->id_usuario_ticket),
+			'id_ticket'=>($v->id_ticket),
+			'nombre_ticket'=>($v->nombre_ticket),
+			'estado'=>($v->estado),
+			'descripcion'=>($v->descripcion),
+			'nivel_prioridad'=>($v->nivel_prioridad),
+			'creacion'=>($v->creacion),
+			'programada'=>($v->programada),
+			'fecha_programada'=>($v->fecha_programada),
+			'info_adicional'=>($v->info_adicional),
+			'puesto'=>($v->puesto),
+			'departamento'=>($v->departamento),
+			'total_fases'=>($cantidad_fases),
+			'total_fases_ticket'=>($cantidad_fases_ticket),
+			'nombre_completo'=>($v->nombre_completo),
+			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),
+			'nombre_tecnico'=>($v->nombre_tecnico)
+		);
 	}
-
 	echo json_encode($results);
-
 }
 
 
@@ -690,30 +688,45 @@ if($_GET[accion]=='get_tickets_cerradas_usuario'){
 
 
 if($_GET[accion]=='get_tickets_abiertas_soporte'){
-
-
 	
-
-
 	if(empty($_POST[fecha])){
-
-		//modalidad normal
-
-		$sql = mysqli_query($con,  "SELECT ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, ut.estado, t.descripcion, ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, p.puesto, d.departamento, us.nombre_completo  FROM usuario us, usuario_ticket ut, ticket t, departamento_puesto dp, departamento d, puesto p WHERE t.id_ticket=ut.id_ticket AND ut.id_usuario=us.id_usuario AND us.id_usuario=dp.id_usuario AND dp.id_departamento=d.id_departamento AND dp.id_puesto=p.id_puesto AND ut.estado=0 AND ut.id_usuario='$_POST[id_usuario]' GROUP BY ut.id_usuario_ticket");
+		$sql = mysqli_query($con,  "SELECT ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, ut.estado, 
+																				t.descripcion, ut.nivel_prioridad, ut.creacion, ut.programada, 
+																				ut.fecha_programada, ut.info_adicional, p.puesto, d.departamento, 
+																				us.nombre_completo  
+																FROM usuario us, usuario_ticket ut, ticket t, departamento_puesto dp, 
+																			departamento d, puesto p 
+																WHERE t.id_ticket=ut.id_ticket 
+																AND ut.id_usuario=us.id_usuario 
+																AND us.id_usuario=dp.id_usuario 
+																AND dp.id_departamento=d.id_departamento 
+																AND dp.id_puesto=p.id_puesto 
+																AND ut.estado=0 
+																AND ut.id_usuario='$_POST[id_usuario]' 
+																GROUP BY ut.id_usuario_ticket");
 
 	}else{
-
 		//modalidad calendario
-
 		$fecha_de= $_POST[fecha].' 00:00:00';
 		$fecha_a= $_POST[fecha].' 23:59:59';
-
-		$sql = mysqli_query($con,  "SELECT ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, ut.estado, t.descripcion, ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, p.puesto, d.departamento, us.nombre_completo  FROM usuario us, usuario_ticket ut, ticket t, departamento_puesto dp, departamento d, puesto p WHERE t.id_ticket=ut.id_ticket AND ut.id_usuario=us.id_usuario AND us.id_usuario=dp.id_usuario AND dp.id_departamento=d.id_departamento AND dp.id_puesto=p.id_puesto AND ut.id_usuario='$_POST[id_usuario]' AND ut.fecha_programada BETWEEN '$fecha_de' AND '$fecha_a' GROUP BY ut.id_usuario_ticket");
-
+		$sql = mysqli_query($con,  "SELECT ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, ut.estado, 
+																			 t.descripcion, ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, 
+																			 ut.info_adicional, p.puesto, d.departamento, us.nombre_completo  
+															  FROM usuario us, usuario_ticket ut, ticket t, departamento_puesto dp, departamento d, puesto p 
+																WHERE t.id_ticket=ut.id_ticket 
+																AND ut.id_usuario=us.id_usuario 
+																AND us.id_usuario=dp.id_usuario 
+																AND dp.id_departamento=d.id_departamento 
+																AND dp.id_puesto=p.id_puesto 
+																AND ut.id_usuario='$_POST[id_usuario]' 
+																AND ut.fecha_programada BETWEEN '$fecha_de' AND '$fecha_a' 
+																GROUP BY ut.id_usuario_ticket");
 	}
 
 	//cantidad fases
-	 $exe_p = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM fase WHERE estado=1");
+	 $exe_p = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW 
+	                              FROM fase 
+																WHERE estado=1");
 	 $row_p = mysqli_fetch_assoc($exe_p);
 	 $cantidad_fases = $row_p['NUMBER_ROW'];
 
@@ -722,37 +735,33 @@ if($_GET[accion]=='get_tickets_abiertas_soporte'){
 	while($v = mysqli_fetch_object($sql)){
 
 		//cantidad fases ticket
-		 $exe_p2 = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM usuario_ticket_fase where id_usuario_ticket=$v->id_usuario_ticket");
+		 $exe_p2 = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW 
+		 															 FROM usuario_ticket_fase 
+																	 where id_usuario_ticket=$v->id_usuario_ticket");
 		 $row_p2 = mysqli_fetch_assoc($exe_p2);
 		 $cantidad_fases_ticket = $row_p2['NUMBER_ROW'];
 
 
-	$results[] = array(
-	'id_usuario_ticket'=>($v->id_usuario_ticket),
-	'id_ticket'=>($v->id_ticket),
-	'nombre_ticket'=>($v->nombre_ticket),
-	'estado'=>($v->estado),
-	'descripcion'=>($v->descripcion),
-	'nivel_prioridad'=>($v->nivel_prioridad),
-	'creacion'=>($v->creacion),
-	'programada'=>($v->programada),
-	'fecha_programada'=>($v->fecha_programada),
-	'info_adicional'=>($v->info_adicional),
-	'puesto'=>($v->puesto),
-	'departamento'=>($v->departamento),
-	'total_fases'=>($cantidad_fases),
-	'total_fases_ticket'=>($cantidad_fases_ticket),
-	'nombre_completo'=>($v->nombre_completo),
-
-	'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),
-
-	
-	);
-
+		$results[] = array(
+			'id_usuario_ticket'=>($v->id_usuario_ticket),
+			'id_ticket'=>($v->id_ticket),
+			'nombre_ticket'=>($v->nombre_ticket),
+			'estado'=>($v->estado),
+			'descripcion'=>($v->descripcion),
+			'nivel_prioridad'=>($v->nivel_prioridad),
+			'creacion'=>($v->creacion),
+			'programada'=>($v->programada),
+			'fecha_programada'=>($v->fecha_programada),
+			'info_adicional'=>($v->info_adicional),
+			'puesto'=>($v->puesto),
+			'departamento'=>($v->departamento),
+			'total_fases'=>($cantidad_fases),
+			'total_fases_ticket'=>($cantidad_fases_ticket),
+			'nombre_completo'=>($v->nombre_completo),
+			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),		
+		);
 	}
-
 	echo json_encode($results);
-
 }
 
 

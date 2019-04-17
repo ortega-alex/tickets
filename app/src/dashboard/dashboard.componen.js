@@ -19,7 +19,7 @@ class Dashboad extends Component {
         super(props);
         this.state = {
             select: 0,
-            data : [] ,
+            data: [],
             indicadores: {},
             color: ["#90CAF9", "#1890ff", "#1565C0"],
             modal_Usuario: false,
@@ -28,32 +28,10 @@ class Dashboad extends Component {
                 index: ''
             },
             detalle: [],
-            ticket_abierta: {
-                "categoria": "Desarrollo",
-                "sub_categoria": "Correcciones",
-                "nombre_ticket": "sadfsdfdsf",
-                "procedimiento": "",
-                "descripcion": "desssss",
-                "id_usuario_ticket": "91",
-                "nivel_prioridad": "3",
-                "creacion": "2018-11-07 14:51:11",
-                "programada": "0",
-                "fecha_programada": "2018-11-07 14:51:11",
-                "info_adicional": "",
-                "username": "asdf",
-                "nombre_completo": "marco duarte",
-                "departamento": "Claro",
-                "puesto": "Supervisor",
-                "estado": "1",
-                "id_calificacion": "16",
-                "calificacion": "{\"id_calificacion\":\"16\",\"nivel_satisfaccion\":\"4.00\",\"tiempo_espera\":\"5.00\",\"amabilidad\":\"5.00\",\"conocimientos\":\"5.00\"}",
-                "fases": "[{\"id_usuario_ticket_fase\":\"103\",\"id_fase\":\"1\",\"estado\":\"1\",\"fecha_inicio\":\"2018-11-07 14:51:11\",\"fecha_fin\":\"2018-11-07 14:51:34\",\"id_tecnico\":null,\"nombre_tecnico\":\"asdf\",\"resultado\":null,\"calificacion_fase\":\"0\",\"fase\":\"primera fase\",\"orden\":\"1\",\"tiempo_limite\":\"400\",\"color\":\"#F5ED54\"},{\"id_usuario_ticket_fase\":\"105\",\"id_fase\":\"2\",\"estado\":\"1\",\"fecha_inicio\":\"2018-11-07 14:51:34\",\"fecha_fin\":\"2018-11-07 14:51:35\",\"id_tecnico\":\"3\",\"nombre_tecnico\":\"marco duarte\",\"resultado\":null,\"calificacion_fase\":\"0\",\"fase\":\"segunda fase\",\"orden\":\"2\",\"tiempo_limite\":\"34\",\"color\":\"#40B81A\"}]",
-                "mensajes": "[]"
-            }
+            id_usuario_ticket: null
         }
         this.handleSelect = this.handleSelect.bind(this);
         this.handleModal = this.handleModal.bind(this);
-        console.log(this.props, 'props');
     }
 
     componentDidMount() {
@@ -70,7 +48,7 @@ class Dashboad extends Component {
         });
     }
 
-    getEstadistica(estado){
+    getEstadistica(estado) {
         const { Server } = this.props;
         http._GET(String(Server) + 'dashboad/dashboad.php?grafica=true&estado=' + estado).then((res) => {
             this.setState({ data: res });
@@ -89,7 +67,7 @@ class Dashboad extends Component {
             const { Server } = this.props;
             http._GET(String(Server) + 'dashboad/dashboad.php?detalle=true&tecnico=' + e["activePayload"][0]["payload"]["tecnico"]).then((res) => {
                 this.setState({
-                    detalle : res ,
+                    detalle: res,
                     modal_Usuario: !this.state.modal_Usuario,
                     user: {
                         name: e["activeLabel"],
@@ -98,13 +76,14 @@ class Dashboad extends Component {
                 });
             }).catch(err => {
                 message.error("Error al cargar informacion." + err);
-            });            
+            });
         }
     }
 
     verTicket(value) {
-        console.log("value", value);
         this.setState({
+            id_usuario_ticket: value["id_usuario_ticket"],
+            modalidad: (value["estado"] == "Abierto") ? "tickets_abiertas" : "tickets_cerradas",
             modal_verTicket: true
         });
     }
@@ -114,9 +93,8 @@ class Dashboad extends Component {
     }
 
     modalVerTicket() {
-        const { modal_verTicket, ticket_abierta } = this.state;
+        const { modal_verTicket, id_usuario_ticket, modalidad } = this.state;
         const { Server } = this.props;
-        const modalidad = 'tickets_abiertas_soporte';
         const id_usuario = 3;
         return (
             <Rodal
@@ -133,7 +111,7 @@ class Dashboad extends Component {
                             getTicketsAbiertas={this.getTicketsAbiertas.bind(this)}
                             Server={Server}
                             modalidad={(modalidad == 'tickets_abiertas_soporte' || modalidad == 'tickets_cerradas_soporte') ? 'soporte' : 'usuario'}
-                            id_usuario_ticket={ticket_abierta.id_usuario_ticket} id_usuario={id_usuario} cerrarModalVerTicket={this.cerrarModalVerTicket.bind(this)} />
+                            id_usuario_ticket={id_usuario_ticket} id_usuario={id_usuario} cerrarModalVerTicket={this.cerrarModalVerTicket.bind(this)} />
                     </div>
                 }
             </Rodal>
@@ -141,45 +119,13 @@ class Dashboad extends Component {
     }
 
     getTicketsAbiertas() {
-        const { Server, modalidad, fecha, id_usuario } = this.props;
-        let server = String(Server);
-        let accion = '';
-        if (modalidad == 'tickets_abiertas') {
-            accion = 'get_tickets_abiertas_usuario';
-        } else if (modalidad == 'tickets_cerradas') {
-            accion = 'get_tickets_cerradas_usuario';
-        } else if (modalidad == 'tickets_abiertas_soporte') {
-            accion = 'get_tickets_abiertas_soporte';
-        } else if (modalidad == 'tickets_cerradas_soporte') {
-            accion = 'get_tickets_cerradas_soporte';
-        }
-
-        this.setState({ cargando: true });
-        var data = new FormData();
-        data.append('id_usuario', id_usuario);
-
-        if (fecha) {
-            data.append('fecha', moment(fecha).format('YYYY-MM-DD'));
-        }
-
-        http._POST(server + 'configuracion/usuario.php?accion=' + accion, data).then((res) => {
-            if (res !== 'error') {
-                this.setState({ tickets_abiertas: res, tickets_abiertas_resultado: res });
-                this.setState({ cargando: false });
-            } else {
-                message.error("Error al cargar Tickets.");
-                this.setState({ cargando: false });
-            }
-        }).catch(err => {
-            message.error("Error al cargar Tickets." + err);
-            this.setState({ cargando: false });
-        });
+        this.getIndicadores();
+        this.getEstadistica(this.state.select);
     }
 
-
     render() {
-        const { select, color, data , indicadores } = this.state;
-        
+        const { select, color, data, indicadores } = this.state;
+
         return (
             <div className="content-dashboard">
                 {this.modalUsuario()}
@@ -247,7 +193,7 @@ class Dashboad extends Component {
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Bar dataKey={select != 2 ? 'tickers' : 'porcentaje'} fill={color[select]} />
+                            <Bar dataKey={select != 2 ? 'tickers' : 'porcentaje'} fill={color[select]} />                                                        
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -262,7 +208,7 @@ class Dashboad extends Component {
                 animation={'slideUp'}
                 visible={modal_Usuario}
                 height={480}
-                width={700}
+                width={1000}
                 onClose={() => { this.setState({ modal_Usuario: !modal_Usuario }) }}
                 closeMaskOnClick
                 showCloseButton={true}
@@ -294,7 +240,7 @@ class Dashboad extends Component {
                                 <AgGridColumn headerName="estado" field="estado" />
                                 <AgGridColumn headerName="usuario" field="usuario" />
                                 <AgGridColumn headerName="departamento" field={"departamento"} />
-                                <AgGridColumn headerName="fecha" field={"fecha"} cellRenderer={(param) => { return moment(param).format('l') }}/>
+                                <AgGridColumn headerName="fecha" field={"fecha"} />
                                 <AgGridColumn suppressFilter headerName=" " field={"data"}
                                     cellRendererFramework={(param) => {
                                         return (

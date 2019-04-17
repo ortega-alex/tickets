@@ -86,12 +86,12 @@ class ver_ticket_abierta extends Component {
               </div>
               <div style={{ flexDirection: 'column', display: 'flex', flex: 1, width: '45%', height: '100%' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'center' }}>
-
+                 
                   {(parseInt(this.state.ticket.estado) == 0) ?
                     <div style={{ backgroundColor: '#ECF0F1', display: 'flex', flex: 1, flexDirection: 'row', borderRadius: 13, padding: '7px', paddingLeft: '15px', alignItems: 'center', boxShadow: '0px 1px 4px #909497' }}>
                       <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'row', lineHeight: 1 }}>  <Icon type="fire" theme="filled" style={{ marginRight: 5, fontSize: 18, color: String(this.printFaseActual().color) }} /><h4 style={{ lineHeight: 1 }}>{this.printFaseActual().fase}</h4></div>
-                        <div style={{ fontSize: 9, }}>Soporte por {this.printFaseActual().nombre_tecnico}</div>
+                        <div style={{ fontSize: 9, }}>Soporte por <b> {this.printFaseActual().nombre_tecnico} </b></div>
                       </div>
                       {this.props.modalidad == 'soporte' &&
                         <Tooltip title="Pasar ticket a la siguiente fase">

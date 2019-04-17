@@ -411,49 +411,55 @@ function notificar_nueva_ticket($id_ticket, $id_cargo, $con){
 
 if($_GET[accion]=='get_previsualizar_ticket'){
 
-
 	//fases
-	$fases = mysqli_query($con, "SELECT utf.id_usuario_ticket, utf.id_usuario_ticket_fase, utf.id_fase, utf.estado, utf.fecha_inicio, utf.fecha_fin, utf.id_tecnico, us.nombre_completo, utf.resultado, utf.calificacion_fase, f.fase, f.orden, f.color, f.tiempo_limite FROM usuario_ticket_fase utf, fase f, usuario us WHERE utf.id_fase=f.id_fase AND (utf.id_tecnico=us.id_usuario  OR utf.id_tecnico IS NULL) AND utf.id_usuario_ticket='$_POST[id_usuario_ticket]' GROUP BY utf.id_usuario_ticket_fase ORDER BY utf.fecha_inicio ASC");
-	$rows_fases = array();
-	while($r = mysqli_fetch_object($fases)) {
-	    $rows_fases[] = array(
-	               'id_usuario_ticket_fase'=>($r->id_usuario_ticket_fase),
-	               'id_fase'=>($r->id_fase),
-	               'estado'=>($r->estado),
-	               'fecha_inicio'=>($r->fecha_inicio),
-	               'fecha_fin'=>($r->fecha_fin),
-	               'id_tecnico'=>($r->id_tecnico),
-	               'nombre_tecnico'=>($r->nombre_completo),
-	               'resultado'=>($r->resultado),
-	               'calificacion_fase'=>($r->calificacion_fase),
-	               'fase'=>($r->fase),
-	               'orden'=>($r->orden),
-	               'tiempo_limite'=>($r->tiempo_limite),
-	               'color'=>($r->color),
+	$strQuery = "SELECT a.id_usuario_ticket , a.id_usuario_ticket_fase , a.id_fase , a.estado , a.fecha_inicio , a.fecha_fin,
+											a.id_tecnico , a.resultado , a.calificacion_fase ,
+											b.fase , b.orden , b.color , b.tiempo_limite ,
+											IF ( a.id_tecnico IS NULL , 'Sin Asignar' ,  c.nombre_completo) AS nombre_completo
+								FROM usuario_ticket_fase a 
+								INNER JOIN fase b ON a.id_fase = b.id_fase 
+								LEFT JOIN usuario c ON a.id_tecnico = c.id_usuario  
+								WHERE a.id_usuario_ticket = {$_POST[id_usuario_ticket]}
+								GROUP BY a.id_usuario_ticket_fase 
+								ORDER BY a.fecha_inicio ASC";
+	$qTemp = mysqli_query($con, $strQuery);
 
-	              );
+	$rows_fases = array();
+	while($r = mysqli_fetch_object($qTemp)) {
+	    $rows_fases[] = array(
+				'id_usuario_ticket_fase'=>($r->id_usuario_ticket_fase),
+				'id_fase'=>($r->id_fase),
+				'estado'=>($r->estado),
+				'fecha_inicio'=>($r->fecha_inicio),
+				'fecha_fin'=>($r->fecha_fin),
+				'id_tecnico'=>($r->id_tecnico),
+				'nombre_tecnico'=>($r->nombre_completo),
+				'resultado'=>($r->resultado),
+				'calificacion_fase'=>($r->calificacion_fase),
+				'fase'=>($r->fase),
+				'orden'=>($r->orden),
+				'tiempo_limite'=>($r->tiempo_limite),
+				'color'=>($r->color)
+			);
 	}
 	$fases_tickets= json_encode($rows_fases);
-
 
 	//mensajes
 	$mensajes = mysqli_query($con, "SELECT men.id_mensaje, men.id_usuario, us.nombre_completo, men.mensaje, men.fecha, men.estado FROM usuario_ticket ut, mensaje men, usuario us WHERE ut.id_usuario_ticket=men.id_usuario_ticket AND men.id_usuario=us.id_usuario AND ut.id_usuario_ticket='$_POST[id_usuario_ticket]' ORDER BY men.fecha ASC");
 	$rows_mensajes = array();
 	while($r = mysqli_fetch_object($mensajes)) {
-	    $rows_mensajes[] = array(
-	               'id_mensaje'=>($r->id_mensaje),
-	               'id_usuario'=>($r->id_usuario),
-	               'nombre_completo'=>($r->nombre_completo),
-	               'mensaje'=>($r->mensaje),
-	               'fecha'=>($r->fecha),
-	               'estado'=>($r->estado),
+		$rows_mensajes[] = array(
+			'id_mensaje'=>($r->id_mensaje),
+			'id_usuario'=>($r->id_usuario),
+			'nombre_completo'=>($r->nombre_completo),
+			'mensaje'=>($r->mensaje),
+			'fecha'=>($r->fecha),
+			'estado'=>($r->estado),
 
-	              );
+		);
 	}
+
 	$mensajes_ticket= json_encode($rows_mensajes);
-
-
-
 	$sql = mysqli_query($con, "SELECT c.categoria, sb.sub_categoria, t.nombre_ticket, t.procedimiento, t.descripcion, ut.id_usuario_ticket, ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, ut.estado, ut.id_calificacion, us.username, us.username, us.nombre_completo, d.departamento, p.puesto FROM categoria c, sub_categoria sb, ticket t, usuario_ticket ut, usuario us, departamento_puesto dp, puesto p, departamento d WHERE c.id_categoria=sb.id_categoria AND sb.id_sub_categoria=t.id_sub_categoria AND t.id_ticket=ut.id_ticket AND ut.id_usuario=us.id_usuario AND us.id_usuario=dp.id_usuario AND dp.id_departamento=d.id_departamento AND dp.id_puesto=p.id_puesto AND ut.id_usuario_ticket='$_POST[id_usuario_ticket]' GROUP BY t.id_ticket LIMIT 1");
 
 
@@ -718,19 +724,24 @@ if($_GET[accion]=='enviar_ticket_transferida'){
  	$mensaje= "Por algún motivo ".$nombre_tecnico." no ha podido continuar con esta ticket, podrías darle continuidad?";
 
  	//enviamos notificacion
-	$sqls = mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) VALUES('$_POST[id_usuario]', '$titulo', '$mensaje', '$fecha', 'ver_ticket_aceptar_transferida', '$_POST[id_usuario_ticket]', 1)" );
+	$sqls = mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
+															VALUES('$_POST[id_usuario]', '$titulo', '$mensaje', '$fecha', 'ver_ticket_aceptar_transferida', 
+																			'$_POST[id_usuario_ticket]', 1)" );
 
+	//provicional
+	$strQuery = "UPDATE usuario_ticket AS a
+							 INNER JOIN usuario_ticket_fase AS b ON a.id_usuario_ticket = b.id_usuario_ticket
+							 SET a.id_tecnico = {$_POST[id_tecnico]} ,
+								 b.id_tecnico = {$_POST[id_tecnico]}
+							 WHERE a.id_usuario_ticket = {$_POST[id_usuario_ticket]}";
+	mysqli_query($con, $strQuery);
 
 	if($sqls){
 	  echo json_encode("Ok");
 	}else{
 	  echo json_encode("error");
-	}
-
-	
+	}	
 }
-
-
 
 if($_GET[accion]=='no_tomar_ticket'){
 

@@ -27,7 +27,7 @@
                    FROM calificacion_ticket";
         $qTemp = mysqli_query($con,$sQuery);
         $rTemp = mysqli_fetch_object($qTemp);
-        $obj->satisfaccion = intval($rTemp->total); 
+        $obj->satisfaccion = number_format(floatval($rTemp->total), 2, ".", ".");
         print(json_encode($obj));
     }
 
@@ -51,7 +51,7 @@
         while($rTemp = mysqli_fetch_array($qTemp)) {
             $arr[$index]["tickers"] = $rTemp["tickers"];
             $arr[$index]["usuario"] = $rTemp["usuario"];
-            $arr[$index]["porcentaje"] =  intval($rTemp["porcentaje"]);            
+            $arr[$index]["porcentaje"] =  number_format(floatval($rTemp["porcentaje"]), 2, ".", ".");            
             $arr[$index]["tecnico"] =  $rTemp["tecnico"];
             $index ++;   
         }
@@ -62,8 +62,10 @@
         $intTecnico = isset($_GET["tecnico"]) ? intval($_GET["tecnico"]) : null;
         $where = (empty($intTecnico)) ? " WHERE a.id_tecnico IS NULL " : " WHERE a.id_tecnico = {$intTecnico} ";
         
-        $sQuery = "SELECT b.nombre_ticket as ticket , IF (a.estado = 0 , 'Abierto' , 'Cerrado') AS estado  , 
-                          c.nombre_completo as usuario , e.departamento , a.creacion as fecha
+        $sQuery = "SELECT IF (a.estado = 0 , 'Abierto' , 'Cerrado') AS estado  , a.creacion as fecha , a.id_usuario_ticket ,
+                          b.id_ticket , b.nombre_ticket as ticket , 
+                          c.nombre_completo as usuario , 
+                          e.departamento 
                    FROM usuario_ticket a 
                    INNER JOIN ticket b ON a.id_ticket = b.id_ticket
                    INNER JOIN usuario c ON a.id_usuario = c.id_usuario
@@ -78,12 +80,14 @@
          $index = 0;
          $arr = array();
          while($rTemp = mysqli_fetch_array($qTemp)) {
-             $arr[$index]["ticket"] = $rTemp["ticket"];
-             $arr[$index]["estado"] = $rTemp["estado"];
-             $arr[$index]["usuario"] =  $rTemp["usuario"];
-             $arr[$index]["departamento"] =  $rTemp["departamento"];
-             $arr[$index]["fecha"] =  $rTemp["fecha"];
-             $index ++;   
+            $arr[$index]["estado"] = $rTemp["estado"];
+            $arr[$index]["fecha"] = $rTemp["fecha"];
+            $arr[$index]["id_usuario_ticket"] = $rTemp["id_usuario_ticket"];
+            $arr[$index]["id_ticket"] = $rTemp["id_ticket"];
+            $arr[$index]["ticket"] = $rTemp["ticket"];
+            $arr[$index]["usuario"] = $rTemp["usuario"];
+            $arr[$index]["departamento"] = $rTemp["departamento"];
+            $index ++;   
          }
          print(json_encode($arr));
     }
