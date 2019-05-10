@@ -11,7 +11,7 @@ import Rodal from 'rodal';
 
 import './dashboard.component.css';
 
-var moment = require('moment');
+//var moment = require('moment');
 
 class Dashboad extends Component {
 
@@ -21,7 +21,7 @@ class Dashboad extends Component {
             select: 0,
             data: [],
             indicadores: {},
-            color: ["#90CAF9", "#1890ff", "#1565C0"],
+            color: ["#56b3ff", "#1890ff", "#1565C0"],
             modal_Usuario: false,
             user: {
                 name: '',
@@ -65,7 +65,15 @@ class Dashboad extends Component {
     handleModal(e) {
         if (e != null) {
             const { Server } = this.props;
-            http._GET(String(Server) + 'dashboad/dashboad.php?detalle=true&tecnico=' + e["activePayload"][0]["payload"]["tecnico"]).then((res) => {
+            const { tecnico ,  estado } = e["activePayload"][0]["payload"];
+            const { select } = this.state;
+            
+            var data = new FormData();
+            data.append('tecnico', tecnico);
+            data.append('estado', estado);
+            data.append('select', select);            
+            
+            http._POST(String(Server) + 'dashboad/dashboad.php?detalle=true' , data ).then((res) => {
                 this.setState({
                     detalle: res,
                     modal_Usuario: !this.state.modal_Usuario,
@@ -134,15 +142,15 @@ class Dashboad extends Component {
                     <Grid className="grid" container columns={3} padded stackable>
                         <Grid.Column >
                             <div className="grid-colum"
-                                style={{ background: (select == 0) ? '#97cdff' : '' }}
+                                style={{ background: (select == 0) ? color[select] : '' }}
                                 onClick={this.handleSelect(0)}
                             >
                                 <div className="icon">
-                                    <Icon type="unlock" />
+                                    <Icon type="unlock" style={{ color: (select == 0) ? 'white' : '' }}/>
                                 </div>
                                 <div className="text">
                                     Tickets Abiertos
-                                    <p id="number">
+                                    <p id="number" style={{ color: (select == 0) ? 'white' : '' }}>
                                         {indicadores["abiertos"]}
                                     </p>
                                 </div>
@@ -150,15 +158,15 @@ class Dashboad extends Component {
                         </Grid.Column>
                         <Grid.Column >
                             <div className="grid-colum"
-                                style={{ background: (select == 1) ? '#97cdff' : '' }}
+                                style={{ background: (select == 1) ? color[select] : '' }}
                                 onClick={this.handleSelect(1)}
                             >
                                 <div className="icon">
-                                    <Icon type="lock" />
+                                    <Icon type="lock" style={{ color: (select == 1) ? 'white' : '' }}/>
                                 </div>
                                 <div className="text">
                                     Tickets Cerrados
-                                    <p id="number">
+                                    <p id="number" style={{ color: (select == 1) ? 'white' : '' }}>
                                         {indicadores["cerrados"]}
                                     </p>
                                 </div>
@@ -167,15 +175,15 @@ class Dashboad extends Component {
                         <Grid.Column >
                             <div className="grid-colum"
                                 id={2}
-                                style={{ background: (select == 2) ? '#97cdff' : '' }}
+                                style={{ background: (select == 2) ? color[select] : '' }}
                                 onClick={this.handleSelect(2)}
                             >
                                 <div className="icon">
-                                    <Icon type="pie-chart" />
+                                    <Icon type="pie-chart" style={{ color: (select == 2) ? 'white' : '' }}/>
                                 </div>
                                 <div className="text">
                                     Satisfacción
-                                    <p id="number">
+                                    <p id="number" style={{ color: (select == 2) ? 'white' : '' }}>
                                         {indicadores["satisfaccion"]} %
                                     </p>
                                 </div>
@@ -236,11 +244,11 @@ class Dashboad extends Component {
                                 rowSelection='single'
                                 onGridReady={(params) => { params.api.sizeColumnsToFit(); }}
                                 rowData={detalle}>
-                                <AgGridColumn headerName="ticket" field={"ticket"} />
-                                <AgGridColumn headerName="estado" field="estado" />
-                                <AgGridColumn headerName="usuario" field="usuario" />
-                                <AgGridColumn headerName="departamento" field={"departamento"} />
-                                <AgGridColumn headerName="fecha" field={"fecha"} />
+                                <AgGridColumn headerName="Ticket" field={"ticket"} />
+                                <AgGridColumn headerName="Estado" field="estado" />
+                                <AgGridColumn headerName="Usuario" field="usuario" />
+                                <AgGridColumn headerName="Departamento" field={"departamento"} />
+                                <AgGridColumn headerName="Fecha" field={"fecha"} />
                                 <AgGridColumn suppressFilter headerName=" " field={"data"}
                                     cellRendererFramework={(param) => {
                                         return (

@@ -115,13 +115,13 @@ class ver_ticket_abierta extends Component {
 
                   {(this.props.modalidad == 'usuario') &&
                     <div style={{ display: 'flex', flexDirection: 'column', marginTop: 20, fontSize: 9, alignItems: 'center' }}>
-                      {parseInt(this.state.ticket.estado) == 0 &&
+                      { /* parseInt(this.state.ticket.estado) == 0 &&
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'center', justifyContent: 'center', textAlign: 'center', }}>
                           {(this.state.calificacion_fase_anterior == 0) && <label style={{ width: '100%', textAlign: 'center', lineHeight: 1.3 }}>Califica el proceso hasta ahora</label>}
                           {(this.state.calificacion_fase_anterior > 0) && <label style={{ width: '100%', textAlign: 'center', lineHeight: 1.3 }}>Podrás volver calificar al finalizar la fase actual</label>}
                           <Rate disabled={(this.state.calificacion_fase_anterior > 0) ? true : false} onChange={this.puntuarFaseAnterior.bind(this)} value={this.state.calificacion_fase_anterior} />
                         </div>
-                      }
+                      */}
                       {parseInt(this.state.ticket.estado) == 1 &&
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '5px', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: this.Numero(this.state.ticket.id_calificacion) == 0 ? '#3498DB' : '#F7DC6F' }}>
                           {this.Numero(this.state.ticket.id_calificacion) == 0 &&
@@ -166,6 +166,21 @@ class ver_ticket_abierta extends Component {
                         {this.state.ticket.procedimiento}
                       </div>
                     </TabPane>
+                    { this.state.ticket.archivos.length > 0 &&
+                    <TabPane key={4} tab={"Adjuntos"}>
+                      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', padding: '10px', overflowY: 'auto', fontSize: 13 }}>
+                        <h4 style={{ textAlign: 'center', marginBottom: 7 }}>Archivos adjuntos por el usuario</h4>
+                        {this.state.ticket.archivos.map((res , i) => {
+                          return(
+                            <Button style={{ marginLeft: 8, border: 'none', outline: 'none', }}>
+                              <a href={this.props.Server + 'download.php?ruta='+res.ruta+'&name='+res.nombre} target="_blank">{res.nombre}</a>
+                              <Icon type="download" style={{ fontSize: 23, color: '#909497' }} />
+                            </Button>
+                          )
+                        })}
+                      </div>
+                    </TabPane>
+                    }
                   </Tabs>
                 }
               </div>

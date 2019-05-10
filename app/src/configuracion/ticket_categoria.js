@@ -10,7 +10,6 @@ const FormItem = Form.Item;
 const RadioGroup = Radio.Group;
 const RadioButton = Radio.Button;
 const Search = Input.Search;
-
 //var subiendo=false
 
 class ver_puesto extends Component {
@@ -57,11 +56,11 @@ class ver_puesto extends Component {
               </Button>
               <span>
                 Activa:&nbsp;
-            <Tooltip title="Si inactivas una Categoría los usuarios no podrán hacer uso de todas sus tickets">
+                <Tooltip title="Si inactivas una Categoría los usuarios no podrán hacer uso de todas sus tickets">
                   <Icon type="question-circle-o" />
                 </Tooltip>
                 &nbsp;
-          </span>
+              </span>
               <Tooltip title={this.props.categoria.estado_final.directo == "No" ? ("Acción no permitida! " + this.props.categoria.estado_final.motivo) : 'Activar/Desactivar'} placement='right'>
                 <div>
                   <Switch loading={this.state.cargando} defaultChecked={this.props.categoria.estado_final.estado == 'Inactivo' ? false : true} disabled={!(this.props.categoria.estado_final.directo == "No" ? false : true)} onChange={(valor) => { this.cambiarEstadoCategoria(valor) }} />
@@ -110,7 +109,7 @@ class ver_puesto extends Component {
                   label={(
                     <span>
                       Activa&nbsp;
-                  <Tooltip title="Si inactivas una Sub-Categoría los usuarios no podrán hacer uso de sus tickets">
+                      <Tooltip title="Si inactivas una Sub-Categoría los usuarios no podrán hacer uso de sus tickets">
                         <Icon type="question-circle-o" />
                       </Tooltip>
                     </span>
@@ -147,11 +146,11 @@ class ver_puesto extends Component {
               <Button
                 type="dashed"
                 onClick={() => { this.solicito_nuevaTicket() }}
-                style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '250px', height: '100px', alignItems: 'center', justifyContent: 'center' }}
+                style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '250px', height: '100px', alignItems: 'center', justifyContent: 'center' ,  border: 'solid' ,  borderStyle: 'dashed'}}
               >
                 <Icon type="plus-circle" style={{ fontSize: 35, marginTop: 10 }} />
                 <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap', fontSize: 15, marginTop: 5 }}>
-                  Nuevo Ticket
+                  <b>Nuevo Ticket</b>
               </div>
               </Button>
             </Grid.Column>
@@ -170,16 +169,16 @@ class ver_puesto extends Component {
   }
 
   solicitarEdicionCat() {
-    this.props.solicitarEdicionCat(this.props.categoria)
+    this.props.solicitarEdicionCat(this.props.categoria);
   }
 
   solicitarEdicionSubCat() {
     if (this.state.sub_categoria_edicion.estado == 1) {
-      this.setState({ frm_activo: true })
+      this.setState({ frm_activo: true });
     } else {
-      this.setState({ frm_activo: false })
+      this.setState({ frm_activo: false });
     }
-    this.setState({ modal_nuevaSub: true })
+    this.setState({ modal_nuevaSub: true });
   }
 
   bucarTicket(valor) {
@@ -205,6 +204,8 @@ class ver_puesto extends Component {
     var data = new FormData();
     data.append('id_categoria', this.props.id_categoria);
     data.append('estado', cambiar_a);
+    data.append('categoria' , this.props.categoria.categoria);
+    data.append('_usuario' , this.props._usuario);
 
     http._POST(Server + 'configuracion/ticket.php?accion=estado_cat', data).then(res => {
       if (res !== 'error') {
@@ -220,7 +221,6 @@ class ver_puesto extends Component {
     });
   }
 
-
   cambiarEstadoSubCat(estado) {
     let Server = String(this.props.Server);
     this.setState({ cargando: true });
@@ -230,6 +230,8 @@ class ver_puesto extends Component {
     var data = new FormData();
     data.append('id_sub_categoria', this.state.sub_categoria_edicion.id_sub_categoria);
     data.append('estado', cambiar_a);
+    data.append('sub_categoria' , this.state.sub_categoria_edicion.sub_categoria);
+    data.append('_usuario' , this.props._usuario);
 
     http._POST(Server + 'configuracion/ticket.php?accion=estado_sub_cat', data).then(res => {
       if (res !== 'error') {
@@ -283,7 +285,7 @@ class ver_puesto extends Component {
         customStyles={{ borderRadius: 10 }}
       >
         {(this.state.modal_nuevaTicket) &&
-          <Form_NuevaTicket ticket_edicion={this.state.ticket_edicion} closeModalNuevaTicket={this.closeModalNuevaTicket.bind(this)} categorias={this.props.categorias} sub_categorias={this.state.sub_categorias} Server={this.props.Server} id_categoria={this.props.id_categoria} sub_categoria={this.state.sub_categoria} />
+          <Form_NuevaTicket _usuario={this.props._usuario} ticket_edicion={this.state.ticket_edicion} closeModalNuevaTicket={this.closeModalNuevaTicket.bind(this)} categorias={this.props.categorias} sub_categorias={this.state.sub_categorias} Server={this.props.Server} id_categoria={this.props.id_categoria} sub_categoria={this.state.sub_categoria} />
         }
       </Rodal>
     )
@@ -329,7 +331,7 @@ class ver_puesto extends Component {
                   label={(
                     <span>
                       Activa&nbsp;
-                        <Tooltip title="Si inactivas una Sub-Categoría, los usuarios no podrán crear las tickets pertenecientes a ésta.">
+                      <Tooltip title="Si inactivas una Sub-Categoría, los usuarios no podrán crear las tickets pertenecientes a ésta.">
                         <Icon type="question-circle-o" />
                       </Tooltip>
                     </span>
@@ -366,6 +368,7 @@ class ver_puesto extends Component {
         data.append('nombre_categoria', values.nombre_sub_categoria);
         data.append('estado', this.state.frm_activo ? '1' : '0');
         data.append('id_categoria', this.props.id_categoria);
+        data.append('_usuario' , this.props._usuario); 
 
         if (!this.state.sub_categoria_edicion) {
           http._POST(Server + 'configuracion/ticket.php?accion=nueva_sub_categoria', data).then(res => {
@@ -384,7 +387,6 @@ class ver_puesto extends Component {
             this.setState({ cargando: false });
           });
         } else {
-
           data.append('id_sub_categoria', this.state.sub_categoria_edicion.id_sub_categoria);
           http._POST(Server + 'configuracion/ticket.php?accion=edit_sub_categoria', data).then(res => {
             if (res !== 'error') {
@@ -616,6 +618,8 @@ class ver_puesto extends Component {
     var data = new FormData();
     data.append('id_ticket', this.state.ticket_edicion.id_ticket);
     data.append('estado', cambiar_a);
+    data.append('ticket' , this.state.ticket_edicion.nombre_ticket);
+    data.append('_usuario' , this.props._usuario);
 
     http._POST(Server + 'configuracion/ticket.php?accion=estado', data).then(res => {
       if (res !== 'error') {
@@ -658,12 +662,12 @@ class ItemTicket extends Component {
           width: '250px',
         }}>
         <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-          <div style={{ display: 'flex', flex: 1, flexDirection: 'row', width: '30%', height: '100%', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ display: 'flex', flex: 1, flexDirection: 'row', width: '30%', height: '100%', justifyContent: 'center', alignItems: 'center', textAlign: 'center'  }}>
             {(this.props.ticket.estado_final.estado == 'Activo') &&
-              <Icon type="tool" style={{ color: '#5DADE2', fontSize: 40, textAlign: 'center' }} />
+              <img src={require('../media/ticket.png')} alt="actico" width="90px" />
             }
             {(this.props.ticket.estado_final.estado == 'Inactivo') &&
-              <Icon type="tool" style={{ color: '#D0D3D4', fontSize: 40, textAlign: 'center' }} />
+              <img src={require('../media/ticket_disable.png')} alt="actico" width="90px" />
             }
           </div>
           <div style={{ width: '70%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
@@ -676,7 +680,7 @@ class ItemTicket extends Component {
           </div>
         </div>
         {(this.props.ticket.estado_final.estado !== 'Activo') &&
-          <div style={{ display: 'flex', flex: 1, justifyContent: 'center', height: '40%', alignItems: 'flex-end', fontSize: 8, marginTop: 10 }}>
+          <div style={{ display: 'flex', flex: 1, justifyContent: 'center', height: '10%', alignItems: 'flex-end', fontSize: 8, marginTop: 10 }}>
             {this.props.ticket.estado_final.motivo}
           </div>
         }

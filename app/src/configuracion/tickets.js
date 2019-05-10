@@ -34,7 +34,7 @@ class ver_puesto extends Component {
             <div>
               <Button onClick={this.solicito_nuevaCategoria.bind(this)} type="primary" htmlType="button" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Icon type="plus-circle" style={{ color: 'white', fontSize: 13 }} /> Nueva Categoría
-          </Button>
+              </Button>
             </div>
           }
         >
@@ -45,7 +45,7 @@ class ver_puesto extends Component {
               }
             >
               {(!this.state.cargando) &&
-                <CategoriaView solicitarEdicionCat={this.solicitarEdicionCat.bind(this)} categoria={categoria} getCategorias={this.getCategorias.bind(this)} Server={this.props.Server} id_categoria={categoria.id_categoria} categorias={this.state.categorias} />
+                <CategoriaView _usuario={this.props._usuario} solicitarEdicionCat={this.solicitarEdicionCat.bind(this)} categoria={categoria} getCategorias={this.getCategorias.bind(this)} Server={this.props.Server} id_categoria={categoria.id_categoria} categorias={this.state.categorias} />
               }
             </TabPane>
           ))}
@@ -61,7 +61,7 @@ class ver_puesto extends Component {
   }
 
   solicitarEdicionCat(categoria) {
-    if (categoria.estado === 1) {
+    if (categoria.estado == 1) {
       this.setState({ frm_activo: true });
     } else {
       this.setState({ frm_activo: false });
@@ -85,21 +85,16 @@ class ver_puesto extends Component {
       >
         {(this.state.modal_nuevaCategoria) &&
           <Form onSubmit={this.crearCategoria.bind(this)} style={{ height: "100%" }}>
-
             <div style={{ height: "90%" }}>
-
               {(this.state.categoria_edicion == undefined) && <h2 style={{ textAlign: 'center' }}>Nueva Categoría</h2>}
               {(this.state.categoria_edicion != undefined) && <h2 style={{ textAlign: 'center' }}>Edición Categoría</h2>}
               <Divider style={{ margin: '0px' }} />
-
               <FormItem label="Nombre:">
                 {getFieldDecorator('nombre_categoria', { initialValue: (this.state.categoria_edicion != undefined ? this.state.categoria_edicion.categoria : ''), rules: [{ required: true, message: 'Por favor indica un nombre!' }] })(
                   <Input prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Nombre de la categoría" />
                 )}
               </FormItem>
-
               <div style={{ display: 'flex', flexDirection: 'row', padding: "10px" }}>
-
                 <FormItem
                   style={{ display: 'flex', flex: 1 }}
                   label={(
@@ -115,23 +110,16 @@ class ver_puesto extends Component {
                     <Switch defaultChecked={this.state.frm_activo} onChange={(valor) => { this.setState({ frm_activo: valor }) }} />
                   )}
                 </FormItem>
-
               </div>
-
-
-
             </div>
-
             <div style={{ display: 'flex', height: "10%", justifyContent: 'center' }}>
               <Button disabled={this.state.cargando} type="primary" htmlType="submit" style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
                 {(!this.state.categoria_edicion) && <div>Crear</div>}
                 {(this.state.categoria_edicion) && <div>Guardar Cambios</div>}
               </Button>
             </div>
-
           </Form>
         }
-
       </Rodal>
     )
   }
@@ -147,6 +135,7 @@ class ver_puesto extends Component {
         var data = new FormData();
         data.append('nombre_categoria', values.nombre_categoria);
         data.append('estado', this.state.frm_activo ? '1' : '0');
+        data.append('_usuario' , this.props._usuario); 
 
         if (!this.state.categoria_edicion) {
           http._POST(Server + 'configuracion/ticket.php?accion=nueva_categoria', data).then(res => {
@@ -165,7 +154,6 @@ class ver_puesto extends Component {
           });
         } else {
           data.append('id_categoria', this.state.categoria_edicion.id_categoria);
-
           http._POST(Server + 'configuracion/ticket.php?accion=edit_categoria', data).then(res => {
             if (res !== 'error') {
               this.setState({ modal_nuevaCategoria: false });

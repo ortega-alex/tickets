@@ -60,7 +60,7 @@ class Login extends Component {
                     } else if (res === 'BadPassword') {
                         message.warn("Contraseña Incorrecta");
                     } else if (res) {
-                        this.props.levantamosSesion(res)
+                        this.props.levantamosSesion(res);
                     }
                     this.setState({ cargando: false });
                 }).catch(err => {

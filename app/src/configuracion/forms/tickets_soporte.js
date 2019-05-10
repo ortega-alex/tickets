@@ -63,7 +63,7 @@ class tickets_soporte extends Component {
                   <TreeNode title={Object.keys(item)} key={"cat" + Object.keys(item) + index} selectable={false} >
                     {Object.entries(item[Object.keys(item)][0]).map((item, index) => (
                       <TreeNode title={item[0]} key={"sub_cat" + item[0] + index} selectable={false} >
-                        {Object.entries(item[1]).map((item, index) => (
+                        {Object.entries(item[1]).map((item) => (
                           <TreeNode title={item[1].nombre_ticket} key={item[1].id_ticket} selectable={false} />
                         ))}
                       </TreeNode>
@@ -75,26 +75,28 @@ class tickets_soporte extends Component {
             :
             <Layout style={{ height: '100%', width: '100%', overflowY: 'auto', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }}>
               Cargando tickets...
-                </Layout>
+            </Layout>
           }
         </Layout>
         <div style={{ display: 'flex', flexDirection: 'row', height: '10%', alignItems: 'center', justifyContent: 'flex-end' }}>
           <Button onClick={this.guardarPerfilTicketsSoporte.bind(this)} disabled={!this.state.cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
             Guardar Cambios
-            </Button>
+          </Button>
         </div>
       </div>
     )
   }
 
   cambiarEstadoSoportePuesto(estado) {
-    let Server = String(this.props.Server);
+    const { usuario , _usuario , Server , id_cargo } = this.props;
     this.setState({ cargando: true });
     var cambiar_a = (!estado) ? 0 : 1;
 
     var data = new FormData();
-    data.append('id_cargo', this.props.id_cargo);
+    data.append('id_cargo', id_cargo);
     data.append('estado', cambiar_a);
+    data.append('_usuario' , _usuario);
+    data.append('username' , usuario.username );
 
     http._POST(Server + 'configuracion/usuario.php?accion=cambiar_estado_soporte_asignacion', data).then(res => {
       if (res !== 'error') {
@@ -110,7 +112,6 @@ class tickets_soporte extends Component {
   }
 
   onCheck = (checkedKeys, info) => {
-    //console.log('onCheck', checkedKeys, info);
     let resultado = [];
     for (const objecto of checkedKeys) {
       if (!this.tiene_letras(objecto)) {
@@ -132,6 +133,8 @@ class tickets_soporte extends Component {
     data.append('perfil', JSON.stringify(this.state.tickets_seleccionadas));
     data.append('tipo', this.props.tipo);
     data.append('id_usuario', this.props.id_usuario);
+    data.append('_usuario' , this.props._usuario);
+    data.append('username' , this.props.usuario.username );
 
     http._POST(Server + 'configuracion/usuario.php?accion=guardar_perfil_tickets_soporte', data).then(res => {
       if (res !== 'error') {

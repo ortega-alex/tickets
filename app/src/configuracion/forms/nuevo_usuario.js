@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
 
-import { Form, Icon, Divider, Input, Tooltip, message, Button, Switch } from 'antd';
+import { Form, Icon, Divider, Input, Tooltip, message, Button, Switch , Select} from 'antd';
 import http from '../../services/http.services';
 
 const FormItem = Form.Item;
+const Option = Select.Option;
 
 class nuevo_usuario extends Component {
 
@@ -11,12 +12,15 @@ class nuevo_usuario extends Component {
     super(props);
     this.state = {
       nuevo_usuario_activo: true,
+      frm_id_rol : this.props.rol
     }
   }
 
   componentWillMount() {
     if (this.props.usuario_edicion !== undefined) {
-      this.setState({ nuevo_usuario_activo: this.props.usuario_edicion.estado == 1 ? true : false });
+      this.setState({ 
+        nuevo_usuario_activo: this.props.usuario_edicion.estado == 1 ? true : false         
+      });
     }
   }
 
@@ -73,6 +77,28 @@ class nuevo_usuario extends Component {
                 <Input type="password" prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Confirma Contraseña" />
               )}
             </FormItem>
+
+            <FormItem label="Rol Usuario"
+                  {...formItemLayout}
+                >
+                {getFieldDecorator('id_rol', {
+                  rules: [{ required: true, message: 'Por favor selecciona un rol!' }], initialValue: (this.props.rol ? String(this.props.rol) : undefined)
+                })(
+                <Select
+                  showSearch
+                  autoClearSearchValue
+                  placeholder="Rol Usuario"
+                  optionFilterProp="children"
+                  onChange={(seleccion) => { this.setState({ frm_id_rol: seleccion }) }}
+                  filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                >
+                  {this.props.roles.map((res, i) => (
+                    <Option key={i} value={res.id_rol}>{res.rol}</Option>
+                  ))}
+                </Select>
+              )}
+            </FormItem>
+
             <FormItem
               {...formItemLayout}
               style={{ display: 'flex', flex: 1 }}
@@ -117,6 +143,8 @@ class nuevo_usuario extends Component {
         data.append('email', values.email);
         data.append('pass_confirm', values.pass_confirm);
         data.append('activo', this.state.nuevo_usuario_activo ? '1' : '0');
+        data.append('id_rol', this.state.frm_id_rol);
+        data.append('_usuario' , this.props._usuario);
 
         if (!this.props.usuario_edicion) {
           http._POST(Server + 'configuracion/usuario.php?accion=nuevo', data).then((res) => {

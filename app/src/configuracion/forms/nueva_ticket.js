@@ -195,6 +195,7 @@ class nueva_ticket extends Component {
         data.append('prioridad', this.state.frm_prioridad);
         data.append('descripcion', values.descripcion);
         data.append('procedimiento', values.procedimiento);
+        data.append('_usuario' , this.props._usuario);
 
         if (!this.state.ticket_edicion) {
           http._POST(Server + 'configuracion/ticket.php?accion=nueva_ticket', data).then((res) => {
@@ -212,7 +213,6 @@ class nueva_ticket extends Component {
           });
         } else {
           data.append('id_ticket', this.state.ticket_edicion.id_ticket);
-
           http._POST(Server + 'configuracion/ticket.php?accion=edit_ticket', data).then((res) => {
             if (res !== 'error') {
               message.info("Ticket actualizada correctamente.");

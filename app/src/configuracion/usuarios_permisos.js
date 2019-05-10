@@ -9,16 +9,19 @@ import http from '../services/http.services';
 
 var moment = require('moment');
 
-class inicio extends Component {
+class UsuarioPermisos extends Component {
 
   componentDidMount() {
-    this.getUsuarios()
+    this.getUsuarios();
+    this.getRolUsuarios();
   }
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       usuarios: [],
+      roles: [] ,
+      rol: undefined,
       modal_nuevoUsuario: false,
       usuario_ficha: undefined,
     }
@@ -177,12 +180,16 @@ class inicio extends Component {
   }
 
   solicitar_nuevoUsuario() {
-    this.setState({ modal_nuevoUsuario: true })
+    this.setState({ 
+      usuario_edicion: undefined,
+      rol : undefined , 
+      modal_nuevoUsuario: true 
+    });
   }
 
   modalUsuario() {
     const { modal_Usuario, usuario_ficha, id_usuario } = this.state;
-    const { Server } = this.props;
+    const { Server , _usuario } = this.props;
     return (
       <Rodal
         animation={'slideUp'}
@@ -196,7 +203,7 @@ class inicio extends Component {
       >
         {(modal_Usuario) &&
           <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <VerUsuario usuario_ficha={usuario_ficha} getUsuarios={this.getUsuarios.bind(this)} id_usuario={id_usuario} Server={Server} />
+            <VerUsuario _usuario={_usuario} usuario_ficha={usuario_ficha} getUsuarios={this.getUsuarios.bind(this)} id_usuario={id_usuario} Server={Server} />
           </div>
         }
       </Rodal>
@@ -205,12 +212,12 @@ class inicio extends Component {
 
   modalNuevoUsuario() {
     const { modal_nuevoUsuario } = this.state;
-    const { Server } = this.props;
+    const { Server , _usuario} = this.props;
     return (
       <Rodal
         animation={'slideDown'}
         visible={modal_nuevoUsuario}
-        height={550}
+        height={600}
         width={450}
         onClose={() => { this.setState({ modal_nuevoUsuario: !modal_nuevoUsuario }) }}
         closeMaskOnClick
@@ -218,7 +225,7 @@ class inicio extends Component {
         customStyles={{ borderRadius: 10 }}
       >
         {(modal_nuevoUsuario) &&
-          <Form_NuevoUsuario getUsuarios={this.getUsuarios.bind(this)} usuario_edicion={this.state.usuario_edicion} Server={Server} closeModalNuevoUsuario={this.closeModalNuevoUsuario.bind(this)} />
+          <Form_NuevoUsuario _usuario={_usuario} getUsuarios={this.getUsuarios.bind(this)} usuario_edicion={this.state.usuario_edicion} roles={this.state.roles} rol={this.state.rol} Server={Server} closeModalNuevoUsuario={this.closeModalNuevoUsuario.bind(this)} />
         }
       </Rodal>
     )
@@ -245,8 +252,11 @@ class inicio extends Component {
     http._POST(Server + 'configuracion/usuario.php?accion=one', data).then((res) => {
       if (res !== 'error') {
         this.setState({ usuario_edicion: undefined }, () => {
-          this.setState({ usuario_edicion: res });
-          this.setState({ modal_nuevoUsuario: true });
+          this.setState({ 
+            usuario_edicion: res ,
+            rol : res['id_rol'] ,
+            modal_nuevoUsuario: true 
+          });
         });
         this.setState({ cargando: false });
       } else {
@@ -271,6 +281,7 @@ class inicio extends Component {
     var data = new FormData();
     data.append('id_usuario', id_usuario);
     data.append('estado', cambiar_a);
+    data.append('_usuario', this.props._usuario);
 
     http._POST(Server + 'configuracion/usuario.php?accion=cambiar_estado', data).then((res) => {
       if (res !== 'error') {
@@ -282,6 +293,21 @@ class inicio extends Component {
       }
     }).catch(err => {
       message.error("Error al actualizar puestos." + err);
+      this.setState({ cargando: false });
+    });
+  }
+
+  getRolUsuarios(){
+    let Server = String(this.props.Server)
+    this.setState({ cargando: true });
+
+    http._GET(Server + 'configuracion/usuario.php?accion=get_rol_usuarios').then(res => {
+      this.setState({ 
+        roles: res ,
+        cargando: false 
+      });
+    }).catch(err => {
+      message.error("Error al cargar Asignaciones." + err);
       this.setState({ cargando: false });
     });
   }
@@ -327,4 +353,4 @@ class inicio extends Component {
   }
 }
 
-export default inicio;
+export default UsuarioPermisos;

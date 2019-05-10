@@ -56,13 +56,11 @@ if($cols_respuesta!=0 ){
                  $_SESSION["id_usuario"] = $row->id_usuario;
                  $_SESSION["nombre_completo"] = $row->nombre_completo;
 
-                 
+                 $jsondata['session_id'] = session_id();
 
-                 echo json_encode(session_id());
-
-
+                 //echo json_encode(session_id());
+                print(json_encode($jsondata));
       }else{
-
             echo json_encode('BadPassword');
       }
 

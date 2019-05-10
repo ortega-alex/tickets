@@ -8,49 +8,44 @@ mysqli_set_charset($con,"utf8");
 header('Content-Type: application/json');
 ini_set( "display_errors", 0); 
 header('Access-Control-Allow-Origin: *'); 
-
+include('../helper.php');
 
 if($_GET[accion]=='nueva_categoria'){
-	$fecha= date("Y-m-d H:i:s");
-	$sql = mysqli_query($con, "INSERT INTO categoria(categoria, estado, creacion) 
-														 VALUES('$_POST[nombre_categoria]', '$_POST[estado]', '$fecha')" );
 
-	if($sql){
-	  $lastid=mysqli_insert_id($con);
-	  echo json_encode($lastid);
-	}else{
-	  echo json_encode("error");
+	$intEstado = intval($_POST[estado]);
+	$strNombre = isset($_POST['nombre_categoria']) ? trim($_POST['nombre_categoria']) : null;
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+
+	if ( !empty($strNombre) ) {
+		$strQuery = "INSERT INTO categoria(categoria, estado) 
+								 VALUES('{$strNombre}', {$intEstado})";
+		if(mysqli_query($con,  $strQuery)){
+			setHistorial($intUsuario , "Nueva categoria : {$strNombre}" , $con);
+			$lastid=mysqli_insert_id($con);
+			echo json_encode($lastid);
+		} else {
+			echo json_encode("error");
+		}
+	} else {
+		echo json_encode("error");
 	}
 }
-
-
 
 if($_GET[accion]=='get_categorias'){
 
-	$sql = mysqli_query($con, "SELECT * FROM categoria ORDER BY creacion ");
-
-
-	//Create an array with the results
+	$sql = mysqli_query($con, "SELECT * FROM categoria ORDER BY creacion");
 	$results=array();
 	while($v = mysqli_fetch_object($sql)){
-	$results[] = array(
-	'id_categoria'=>($v->id_categoria),
-	'categoria'=>($v->categoria),
-	'estado'=>($v->estado),
-	'creacion'=>($v->creacion),
-
-	'estado_final'=>(estado_categoria($v->id_categoria, $con)),
-	
-	);
-
+		$results[] = array(
+			'id_categoria'=>($v->id_categoria),
+			'categoria'=>($v->categoria),
+			'estado'=>($v->estado),
+			'creacion'=>($v->creacion),
+			'estado_final'=>(estado_categoria($v->id_categoria, $con)),
+		);
 	}
-
 	echo json_encode($results);
-
 }
-
-
-
 
 if($_GET[accion]=='edit'){
 
@@ -66,24 +61,27 @@ if($_GET[accion]=='edit'){
 
 }
 
-
 if($_GET[accion]=='nueva_sub_categoria'){
 
- 
-	$fecha= date("Y-m-d H:i:s");
-
-	$sql = mysqli_query($con, "INSERT INTO sub_categoria(sub_categoria, id_categoria, estado, creacion) VALUES('$_POST[nombre_categoria]', '$_POST[id_categoria]', '$_POST[estado]', '$fecha')" );
-
-	if($sql){
-	  $lastid=mysqli_insert_id($con);
-	  echo json_encode($lastid);
-	}else{
+	$strNombreCategoria = isset($_POST['nombre_categoria']) ? trim($_POST['nombre_categoria']) : null;
+	$intEstado = intval($_POST['estado']);
+	$intIdCategoria = isset($_POST['id_categoria']) ? intval($_POST['id_categoria']) : 0;
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+	
+	if ( $intIdCategoria > 0 && !empty($strNombreCategoria) ) {
+		$strQuery = "INSERT INTO sub_categoria(sub_categoria, id_categoria, estado) 
+								 VALUES('{$strNombreCategoria}', {$intIdCategoria}, {$intEstado} )";
+		if ( mysqli_query($con,  $strQuery) ) {
+			setHistorial($intUsuario , "Nueva sub Categoria: {$strNombreCategoria}" , $con);
+			$lastid=mysqli_insert_id($con);
+			echo json_encode($lastid);
+		} else {
+			echo json_encode("error");
+		}
+	} else {
 	  echo json_encode("error");
 	}
-
-
 }
-
 
 if($_GET[accion]=='get_sub_categorias'){
 
@@ -115,22 +113,33 @@ if($_GET[accion]=='get_sub_categorias'){
 
 if($_GET[accion]=='nueva_ticket'){
 
+	$strTitulo = isset($_POST['titulo_ticket']) ? trim($_POST['titulo_ticket']) : null;
+	$strDescripcion = trim($_POST['descripcion']);
+	$intSubCategoria = isset($_POST['sub_categoria']) ? intval($_POST['sub_categoria']) : 0;
+	$intMinutos = isset($_POST['minutos_estimados']) ? intval($_POST['minutos_estimados']) : 0;
+	$intPrioridad = isset($_POST['prioridad']) ? intval($_POST['prioridad']) : 0;
+	$intEstado = intval($_POST['estado']);
+	$strProcedimiento = trim($_POST['procedimiento']);
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+	$strCategoria = isset($_POST['categoria']) ? trim($_POST['categoria']) : null;
 
-	$fecha= date("Y-m-d H:i:s");
-
-	$sql = mysqli_query($con, "INSERT INTO ticket(nombre_ticket, descripcion, id_sub_categoria, tiempo_estimado, prioridad_recomendada, estado, creacion, procedimiento) VALUES('$_POST[titulo_ticket]', '$_POST[descripcion]', '$_POST[sub_categoria]', '$_POST[minutos_estimados]', '$_POST[prioridad]', '$_POST[estado]', '$fecha', '$_POST[procedimiento]')" );
-
-	if($sql){
-	  $lastid=mysqli_insert_id($con);
-	  echo json_encode($lastid);
-	}else{
+	if ( !empty($strTitulo) && $intSubCategoria > 0 && $intMinutos > 0 && $intPrioridad > 0 ) {
+		$strQuery = "INSERT INTO ticket(nombre_ticket, descripcion, id_sub_categoria, tiempo_estimado, 
+															prioridad_recomendada, estado, procedimiento) 
+								 VALUES('{$strTitulo}' , '{$strDescripcion}', {$intSubCategoria}, {$intMinutos}, 
+													{$intPrioridad} , {$intEstado} , '{$strProcedimiento}')";
+		if ( mysqli_query($con, $strQuery ) ) {
+			$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';			 
+			setHistorial($intUsuario , "Nuevo ticket: {$strTitulo}, Categoria: {$strCategoria}, Estado: {$strEstado}" , $con);
+			$lastid=mysqli_insert_id($con);
+			echo json_encode($lastid);
+		} else {
+			echo json_encode("error");
+		}
+	} else {
 	  echo json_encode("error");
 	}
-
-
 }
-
-
 
 if($_GET[accion]=='get_tickets'){
 
@@ -138,58 +147,41 @@ if($_GET[accion]=='get_tickets'){
 								 t.estado, t.creacion, t.procedimiento 
 					FROM ticket t, categoria c, sub_categoria s 
 					WHERE 1 
-					AND c.id_categoria='$_POST[id_categoria]' 
+					AND c.id_categoria={$_POST[id_categoria]} 
 					AND c.id_categoria=s.id_categoria 
 					AND s.id_sub_categoria=t.id_sub_categoria";
 
 	$subcat=intval($_POST[sub_categoria]);
-
-	if($subcat>0){
-		$query=$query." AND s.id_sub_categoria='$_POST[sub_categoria]' ";
+	if ( $subcat>0 ) {
+		$query=$query." AND s.id_sub_categoria={$_POST[sub_categoria]}";
 	}
-
+	
 	$query=$query." ORDER BY t.creacion ";
-
-
 
 	$sql = mysqli_query($con,  $query);
 
-
-	//Create an array with the results
 	$results=array();
 	while($v = mysqli_fetch_object($sql)){
-	$results[] = array(
-	'id_ticket'=>($v->id_ticket),
-	'nombre_ticket'=>($v->nombre_ticket),
-	'descripcion'=>($v->descripcion),
-	'id_sub_categoria'=>($v->id_sub_categoria),
-	'tiempo_estimado'=>($v->tiempo_estimado),
-	'prioridad_recomendada'=>($v->prioridad_recomendada),
-	'estado'=>($v->estado),
-	'creacion'=>($v->creacion),
-	'procedimiento'=>($v->procedimiento),
-
-	'estado_final'=>(estado_ticket($v->id_ticket, $con)),
-
-	
-	);
-
+		$results[] = array(
+			'id_ticket'=>($v->id_ticket),
+			'nombre_ticket'=>($v->nombre_ticket),
+			'descripcion'=>($v->descripcion),
+			'id_sub_categoria'=>($v->id_sub_categoria),
+			'tiempo_estimado'=>($v->tiempo_estimado),
+			'prioridad_recomendada'=>($v->prioridad_recomendada),
+			'estado'=>($v->estado),
+			'creacion'=>($v->creacion),
+			'procedimiento'=>($v->procedimiento),
+			'estado_final'=>(estado_ticket($v->id_ticket, $con)),			
+		);
 	}
-
 	echo json_encode($results);
-
 }
 
-
-
 if($_GET[accion]=='get_ticket'){
-
-
-
-	$sql = mysqli_query($con, "SELECT * FROM ticket WHERE id_ticket='$_POST[id_ticket]' ");
-
-
-	$row = mysqli_fetch_object($sql);
+	$strQuery = "SELECT * FROM ticket WHERE id_ticket={$_POST[id_ticket]}";
+	$qTmp = mysqli_query($con, $strQuery);
+	$row = mysqli_fetch_object($qTmp);
 
 	$jsondata['id_ticket'] = $row->id_ticket;
 	$jsondata['nombre_ticket'] = $row->nombre_ticket;
@@ -202,171 +194,220 @@ if($_GET[accion]=='get_ticket'){
 	$jsondata['procedimiento'] = $row->procedimiento;
 	$jsondata['sub_categoria'] = (json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM sub_categoria WHERE id_sub_categoria=$row->id_sub_categoria "))) );
 	$jsondata['categoria'] =(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM categoria c, sub_categoria sb WHERE c.id_categoria=sb.id_categoria AND sb.id_sub_categoria=$row->id_sub_categoria "))) );
-
 	$jsondata['estado_final']=(estado_ticket($row->id_ticket, $con));
 
-
 	echo json_encode($jsondata);
-
 }
 
 
 if($_GET[accion]=='edit_ticket'){
 
+	$intIdTicket = isset($_POST['id_ticket']) ? intval($_POST['id_ticket']) : 0;
+	$strTitulo = isset($_POST['titulo_ticket']) ? trim($_POST['titulo_ticket']) : null;
+	$strDescripcion = trim($_POST['descripcion']);
+	$intSubCategoria = isset($_POST['sub_categoria']) ? intval($_POST['sub_categoria']) : 0;
+	$intMinutos = isset($_POST['minutos_estimados']) ? intval($_POST['minutos_estimados']) : 0;
+	$intPrioridad = isset($_POST['prioridad']) ? intval($_POST['prioridad']) : 0;
+	$intEstado = intval($_POST['estado']);
+	$strProcedimiento = trim($_POST['procedimiento']);
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+	$strCategoria = isset($_POST['categoria']) ? trim($_POST['categoria']) : null;
 
-	$sql = mysqli_query($con, "UPDATE ticket SET nombre_ticket='$_POST[titulo_ticket]', descripcion='$_POST[descripcion]', id_sub_categoria='$_POST[sub_categoria]', tiempo_estimado='$_POST[minutos_estimados]', prioridad_recomendada='$_POST[prioridad]', estado='$_POST[estado]', procedimiento='$_POST[procedimiento]' WHERE id_ticket='$_POST[id_ticket]'" );
-
-	if($sql){
-	  echo json_encode("Ok");
-	}else{
+	if ( !empty($strTitulo) && $intSubCategoria > 0 && $intMinutos > 0 && $intPrioridad > 0 && $intIdTicket > 0 ) {
+		$strQuery = "UPDATE ticket 
+								 SET nombre_ticket='{$strTitulo}' , 
+										 descripcion='{$strDescripcion}' , 
+										 id_sub_categoria={$intSubCategoria} , 
+										 tiempo_estimado={$intMinutos}, 
+										 prioridad_recomendada={$intPrioridad} , 
+										 estado={$intEstado}, 
+										 procedimiento='{$strProcedimiento}' 
+								 WHERE id_ticket={$intIdTicket}";
+		if ( mysqli_query($con, $strQuery ) ) {
+			$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';			 
+			setHistorial($intUsuario , "Actualizacion de ticket: {$strTitulo}, Categoria: {$strCategoria}, Estado: {$strEstado}" , $con);
+			$lastid=mysqli_insert_id($con);
+			echo json_encode("Ok");
+		} else {
+			echo json_encode("error");
+		}
+	} else {
 	  echo json_encode("error");
 	}
-
-
 }
-
 
 if($_GET[accion]=='estado'){
 
+	$intEstado = intval($_POST['estado']);
+	$intIdTicket = isset($_POST['id_ticket']) ? intval($_POST['id_ticket']) : 0;
+	$strTicket = isset($_POST['ticket']) ? trim($_POST['ticket']) : null;
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
 
-	$sql = mysqli_query($con, "UPDATE ticket SET estado='$_POST[estado]' WHERE id_ticket='$_POST[id_ticket]'" );
-
-	if($sql){
-	  echo json_encode("Ok");
-	}else{
+	if ( $intIdTicket > 0 ) {
+		$strQuery = "UPDATE ticket 
+								 SET estado={$intEstado} 
+								 WHERE id_ticket={$intIdTicket}";
+		if ( mysqli_query($con, $strQuery ) ) {
+			$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';			 
+			setHistorial($intUsuario , "Actualizacion de ticket: {$strTicket}, se dio de: {$strEstado}" , $con);
+			echo json_encode("Ok");
+		} else {
+			echo json_encode("error");
+		}
+	} else {
 	  echo json_encode("error");
 	}
-
-
 }
-
-
 
 if($_GET[accion]=='estado_cat'){
-
-
-	$sql = mysqli_query($con, "UPDATE categoria SET estado='$_POST[estado]' WHERE id_categoria='$_POST[id_categoria]'" );
-
-	if($sql){
-	  echo json_encode("Ok");
-	}else{
-	  echo json_encode("error");
+	$intEstado = intval($_POST['estado']);
+	$intIdCategoria = isset($_POST['id_categoria']) ? intval($_POST['id_categoria']) : 0;
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+	$strCategoria = isset($_POST['categoria']) ? trim($_POST['categoria']) : null;
+	if ( $intIdCategoria > 0 ) {
+		$strQuery =  "UPDATE categoria 
+									SET estado={$intEstado} 
+									WHERE id_categoria={$intIdCategoria}";
+		if ( mysqli_query($con, $strQuery) ){
+			$strEstdo = ($intEstado == 0) ? 'Baja' : 'Alta'; 
+			setHistorial($intUsuario , "Categoria: {$strCategoria} se dio de {$strEstdo}." , $con);
+			echo json_encode("Ok");
+		} else {
+			echo json_encode("error");
+		}
+	} else {
+		echo json_encode("error");
 	}
-
-
 }
-
-
-
 
 if($_GET[accion]=='estado_sub_cat'){
+	$intIdSubCategoria = isset($_POST['id_sub_categoria']) ? intval($_POST['id_sub_categoria']) : 0;
+	$intEstado = intval($_POST['estado']);
+	$strSubCategoria = isset($_POST['sub_categoria']) ? trim($_POST['sub_categoria']) : null;
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
 
-
-	$sql = mysqli_query($con, "UPDATE sub_categoria SET estado='$_POST[estado]' WHERE id_sub_categoria='$_POST[id_sub_categoria]'" );
-
-	if($sql){
-	  echo json_encode("Ok");
-	}else{
+	if ( $intIdSubCategoria > 0 && !empty($strSubCategoria) ) {
+		$strQuery = "	UPDATE sub_categoria 
+									SET estado = {$intEstado} 
+									WHERE id_sub_categoria = {$intIdSubCategoria}";
+		if ( mysqli_query($con, $strQuery )) {
+			$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';
+			setHistorial($intUsuario , "Actualización de sub categoria: {$strSubCategoria} , Estado: {$strEstado}" , $con);
+			echo json_encode("Ok");
+		} else {
+			echo json_encode("error");
+		}
+	} else {
 	  echo json_encode("error");
 	}
-
-
 }
-
 
 if($_GET[accion]=='edit_categoria'){
+	$intEstado = intval($_POST[estado]);
+	$strNombre = isset($_POST['nombre_categoria']) ? trim($_POST['nombre_categoria']) : null;
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+	$intIdCategoria = isset($_POST['id_categoria']) ? intval($_POST['id_categoria']) : 0;
 
-
-	$sql = mysqli_query($con, "UPDATE categoria SET categoria='$_POST[nombre_categoria]', estado='$_POST[estado]' WHERE id_categoria='$_POST[id_categoria]'" );
-
-	if($sql){
-	  echo json_encode("Ok");
-	}else{
-	  echo json_encode("error");
+	if ( !empty($strNombre) && $intIdCategoria > 0 ) {
+		$strQuery = "	UPDATE categoria 
+									SET categoria = '{$strNombre}', 
+											estado = {$intEstado} 
+									WHERE id_categoria = {$intIdCategoria}";
+		if ( mysqli_query( $con, $strQuery ) ) {
+			$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';
+			setHistorial($intUsuario , "Actulización categoria : {$strNombre} , Estado: {$strEstado}." , $con);
+			echo json_encode("Ok");
+		}else{
+			echo json_encode("error");
+		}
 	}
-
-
 }
-
 
 if($_GET[accion]=='edit_sub_categoria'){
 
-
-	$sql = mysqli_query($con, "UPDATE sub_categoria SET sub_categoria='$_POST[nombre_categoria]', estado='$_POST[estado]' WHERE id_sub_categoria='$_POST[id_sub_categoria]'" );
-
-	if($sql){
-	  echo json_encode("Ok");
-	}else{
-	  echo json_encode("error");
+	$strNombreCategoria = isset($_POST['nombre_categoria']) ? trim($_POST['nombre_categoria']) : null;
+	$intEstado = intval($_POST['estado']);
+	$intIdCategoria = isset($_POST['id_categoria']) ? intval($_POST['id_categoria']) : 0;
+	$intUsuario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+	$intIdSubCategoria = isset($_POST['id_sub_categoria']) ? intval($_POST['id_sub_categoria']) : 0;
+	
+	if ( $intIdSubCategoria > 0 && !empty($strNombreCategoria) ) {
+		$strQuery = "	UPDATE sub_categoria 
+									SET sub_categoria = '{$strNombreCategoria}', 
+											estado = {$intEstado} 
+											WHERE id_sub_categoria = {$intIdSubCategoria} ";
+		if ( mysqli_query($con, $strQuery ) ) {
+			$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';
+			setHistorial($intUsuario , "Actualización de sub categoria: {$strNombreCategoria} , Estado: {$strEstado}" , $con);
+	  	echo json_encode("Ok");
+		} else {
+	  	echo json_encode("error");
+		}
+	} else {
+		echo json_encode("error");
 	}
-
-
 }
-
-
-
 
 if($_GET[accion]=='get_tickets_all'){
 
-	$query="SELECT c.categoria, c.id_categoria, s.sub_categoria, s.id_sub_categoria, t.id_ticket, t.nombre_ticket, t.descripcion, t.tiempo_estimado, t.prioridad_recomendada, t.estado, t.creacion, t.procedimiento FROM ticket t, categoria c, sub_categoria s WHERE 1 AND c.id_categoria=s.id_categoria AND s.id_sub_categoria=t.id_sub_categoria  ORDER BY c.categoria, s.sub_categoria";
-
-
-	$sql = mysqli_query($con,  $query);
-
-
-	//Create an array with the results
+	$strQuery="SELECT c.categoria, c.id_categoria, s.sub_categoria, s.id_sub_categoria, t.id_ticket, t.nombre_ticket, 
+								 t.descripcion, t.tiempo_estimado, t.prioridad_recomendada, t.estado, t.creacion, t.procedimiento 
+					FROM ticket t, categoria c, sub_categoria s 
+					WHERE 1 
+					AND c.id_categoria=s.id_categoria 
+					AND s.id_sub_categoria=t.id_sub_categoria  
+					ORDER BY c.categoria, s.sub_categoria";
+	$sql = mysqli_query($con,  $strQuery);
 	$results=array();
 	while($v = mysqli_fetch_object($sql)){
-	$results[] = array(
-	'categoria'=>($v->categoria),
-	'id_categoria'=>($v->id_categoria),
-	'sub_categoria'=>($v->sub_categoria),
-	'id_sub_categoria'=>($v->id_sub_categoria),
-	'id_ticket'=>($v->id_ticket),
-	'nombre_ticket'=>($v->nombre_ticket),
-	'descripcion'=>($v->descripcion),
-	'tiempo_estimado'=>($v->tiempo_estimado),
-	'prioridad_recomendada'=>($v->prioridad_recomendada),
-	'estado'=>($v->estado),
-	'creacion'=>($v->creacion),
-	'procedimiento'=>($v->procedimiento),
-
-	'estado_final'=>(estado_ticket($v->id_ticket, $con)),
-
-	
-	);
-
+		$results[] = array(
+			'categoria'=>($v->categoria),
+			'id_categoria'=>($v->id_categoria),
+			'sub_categoria'=>($v->sub_categoria),
+			'id_sub_categoria'=>($v->id_sub_categoria),
+			'id_ticket'=>($v->id_ticket),
+			'nombre_ticket'=>($v->nombre_ticket),
+			'descripcion'=>($v->descripcion),
+			'tiempo_estimado'=>($v->tiempo_estimado),
+			'prioridad_recomendada'=>($v->prioridad_recomendada),
+			'estado'=>($v->estado),
+			'creacion'=>($v->creacion),
+			'procedimiento'=>($v->procedimiento),
+			'estado_final'=>(estado_ticket($v->id_ticket, $con)),
+		);
 	}
-
 	echo json_encode($results);
-
 }
-
 
 if($_GET[accion]=='aperturar_ticket'){
 
+	$strQuery = "INSERT INTO usuario_ticket ( id_ticket, id_usuario, id_cargo, nivel_prioridad, 
+													 programada, fecha_programada, info_adicional) 
+							 VALUES( {$_POST[id_ticket]}, {$_POST[id_usuario]} , {$_POST[id_cargo]}, 
+											 {$_POST[nivel_prioridad]}, {$_POST[programada]}, '{$_POST[fecha_programada]}', 
+											 '{$_POST[info_adicional]}' )";
 
-	$fecha= date("Y-m-d H:i:s");
-
-	$sql = mysqli_query($con, "INSERT INTO usuario_ticket(id_ticket, id_usuario, id_cargo, nivel_prioridad, creacion, programada, fecha_programada, info_adicional) VALUES('$_POST[id_ticket]', '$_POST[id_usuario]', '$_POST[id_cargo]', '$_POST[nivel_prioridad]', '$fecha', '$_POST[programada]', '$_POST[fecha_programada]', '$_POST[info_adicional]')" );
-
-	if($sql){
-
+	if ( mysqli_query($con, $strQuery) ) {
 	  $lastid=mysqli_insert_id($con);
+		foreach ($_FILES as $key => $file) {
+			$name = $file['name'];
+			$archivo = microtime(true).".".substr(strrchr($name,"."),1);
+			$url = "../public/".$archivo;
+			
+			$strQuery = "INSERT INTO archivos_ticket (id_usuario_ticket , nombre , ruta)
+									 VALUES ( {$lastid} , '{$name}' , '{$archivo}' )";
 
-	  ticket_siguiente_fase($lastid,'',$con);
-
+			if ( mysqli_query($con, $strQuery) ) {
+				move_uploaded_file($file['tmp_name'] , $url);
+			}
+		}
+		ticket_siguiente_fase($lastid,'',$con);
 	  notificar_nueva_ticket($lastid, $_POST[id_cargo], $con);
-
 	  echo json_encode($lastid);
-
-	}else{
+	} else {
 	  echo json_encode("error");
 	}
-
-
 }
-
 
 function notificar_nueva_ticket($id_ticket, $id_cargo, $con){
 
@@ -445,7 +486,13 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 	$fases_tickets= json_encode($rows_fases);
 
 	//mensajes
-	$mensajes = mysqli_query($con, "SELECT men.id_mensaje, men.id_usuario, us.nombre_completo, men.mensaje, men.fecha, men.estado FROM usuario_ticket ut, mensaje men, usuario us WHERE ut.id_usuario_ticket=men.id_usuario_ticket AND men.id_usuario=us.id_usuario AND ut.id_usuario_ticket='$_POST[id_usuario_ticket]' ORDER BY men.fecha ASC");
+	$strQuery = "SELECT men.id_mensaje, men.id_usuario, us.nombre_completo, men.mensaje, men.fecha, men.estado 
+							 FROM usuario_ticket ut, mensaje men, usuario us 
+							 WHERE ut.id_usuario_ticket=men.id_usuario_ticket 
+							 AND men.id_usuario=us.id_usuario 
+							 AND ut.id_usuario_ticket={$_POST[id_usuario_ticket]} 
+							 ORDER BY men.fecha ASC";
+	$mensajes = mysqli_query($con, $strQuery);
 	$rows_mensajes = array();
 	while($r = mysqli_fetch_object($mensajes)) {
 		$rows_mensajes[] = array(
@@ -455,15 +502,40 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 			'mensaje'=>($r->mensaje),
 			'fecha'=>($r->fecha),
 			'estado'=>($r->estado),
-
 		);
 	}
 
 	$mensajes_ticket= json_encode($rows_mensajes);
-	$sql = mysqli_query($con, "SELECT c.categoria, sb.sub_categoria, t.nombre_ticket, t.procedimiento, t.descripcion, ut.id_usuario_ticket, ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, ut.estado, ut.id_calificacion, us.username, us.username, us.nombre_completo, d.departamento, p.puesto FROM categoria c, sub_categoria sb, ticket t, usuario_ticket ut, usuario us, departamento_puesto dp, puesto p, departamento d WHERE c.id_categoria=sb.id_categoria AND sb.id_sub_categoria=t.id_sub_categoria AND t.id_ticket=ut.id_ticket AND ut.id_usuario=us.id_usuario AND us.id_usuario=dp.id_usuario AND dp.id_departamento=d.id_departamento AND dp.id_puesto=p.id_puesto AND ut.id_usuario_ticket='$_POST[id_usuario_ticket]' GROUP BY t.id_ticket LIMIT 1");
-
-
+	
+	$strQuery =  "SELECT c.categoria, sb.sub_categoria, t.nombre_ticket, t.procedimiento, t.descripcion, 
+											 ut.id_usuario_ticket, ut.nivel_prioridad, ut.creacion, ut.programada, 
+											 ut.fecha_programada, ut.info_adicional, ut.estado, ut.id_calificacion, 
+											 us.username, us.username, us.nombre_completo, d.departamento, p.puesto 
+								FROM categoria c, sub_categoria sb, ticket t, usuario_ticket ut, usuario us,
+									   departamento_puesto dp, puesto p, departamento d 
+								WHERE c.id_categoria=sb.id_categoria 
+								AND sb.id_sub_categoria=t.id_sub_categoria 
+								AND t.id_ticket=ut.id_ticket 
+								AND ut.id_usuario=us.id_usuario 
+								AND us.id_usuario=dp.id_usuario 
+								AND dp.id_departamento=d.id_departamento 
+								AND dp.id_puesto=p.id_puesto 
+								AND ut.id_usuario_ticket={$_POST[id_usuario_ticket]} 
+								GROUP BY t.id_ticket LIMIT 1";
+	$sql = mysqli_query($con, $strQuery);
 	$row = mysqli_fetch_object($sql);
+
+	$strQuery = "SELECT ruta , nombre
+							 FROM archivos_ticket 
+							 WHERE id_usuario_ticket ={$_POST[id_usuario_ticket]}";
+	$qTmp = mysqli_query($con, $strQuery);
+	$arr = array();
+	while($rTmp = mysqli_fetch_object($qTmp)) {
+		$arr[] = array(
+			'nombre' => ($rTmp->nombre) ,
+			'ruta' => ($rTmp->ruta) ,	
+		);	
+	}	
 
 	$jsondata['categoria'] = $row->categoria;
 	$jsondata['sub_categoria'] = $row->sub_categoria;
@@ -485,125 +557,102 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 	$jsondata['calificacion'] = (json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM calificacion_ticket WHERE id_calificacion=$row->id_calificacion "))) );
 	$jsondata['fases'] = $fases_tickets;
 	$jsondata['mensajes'] = $mensajes_ticket;
-
-
-
+	$jsondata['archivos'] = $arr;
 
 	echo json_encode($jsondata);
-
 }
 
 
 
 if($_GET[accion]=='tomar_ticket'){
-
-
 	ticket_siguiente_fase($_POST[id_usuario_ticket], $_POST[id_tecnico], $con);
-
-
 	//borramos peticiones sobre ticket
-	mysqli_query($con, "DELETE FROM notificacion WHERE accion_key='$_POST[id_usuario_ticket]' AND accion='ver_ticket_aceptar' " );
-
+	mysqli_query($con, "DELETE FROM notificacion 
+											WHERE accion_key='$_POST[id_usuario_ticket]' 
+											AND accion='ver_ticket_aceptar'" );
 	echo json_encode("Ok");
-
 }
 
+function ticket_siguiente_fase($id_usuario_ticket, $id_tecnico, $con) {
 
-function ticket_siguiente_fase($id_usuario_ticket, $id_tecnico, $con){
+	$fecha= date("Y-m-d H:i:s");
+	$exe = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW 
+	 														FROM usuario_ticket_fase utf 
+															WHERE utf.id_usuario_ticket = $id_usuario_ticket");
+	$row = mysqli_fetch_assoc($exe);
+	$fases = $row['NUMBER_ROW'];
 
-	 $fecha= date("Y-m-d H:i:s");
-
-	 $exe = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM usuario_ticket_fase utf WHERE utf.id_usuario_ticket=$id_usuario_ticket");
-	 $row = mysqli_fetch_assoc($exe);
-	 $fases = $row['NUMBER_ROW'];
-
-
-	 if(intval($fases)==0) {
-
-	 	mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio) VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT 1), 0, '$fecha')" );
-
-	 }else{
-
+	if ( intval($fases) == 0 ) {
+	 	mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio) 
+		 										VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT 1), 0, '$fecha')" );
+	} else {
 	 	$fase_siguiente=intval($fases) + 1;
-
 	 	//total fases
 	 	$exeb = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM fase WHERE estado=1");
 		$rowb = mysqli_fetch_assoc($exeb);
 		$total_fases = $rowb['NUMBER_ROW'];
 
-
 		//actualizamos ultima insertada
 		//total fases
-	 	$ultima = mysqli_query($con, "SELECT utf.id_usuario_ticket_fase, utf.id_tecnico FROM usuario_ticket_fase utf WHERE utf.id_usuario_ticket=$id_usuario_ticket ORDER BY utf.fecha_inicio DESC LIMIT 1");
+	 	$ultima = mysqli_query($con, "SELECT utf.id_usuario_ticket_fase, utf.id_tecnico 
+		 															FROM usuario_ticket_fase utf 
+																	WHERE utf.id_usuario_ticket=$id_usuario_ticket 
+																	ORDER BY utf.fecha_inicio DESC LIMIT 1");
 		$rowultima = mysqli_fetch_assoc($ultima);
 		$id_usuario_ticket_fase = $rowultima['id_usuario_ticket_fase'];
-	 	mysqli_query($con, "UPDATE usuario_ticket_fase SET fecha_fin='$fecha', estado=1 WHERE id_usuario_ticket_fase='$id_usuario_ticket_fase'");
+	 	mysqli_query($con, "UPDATE usuario_ticket_fase 
+		 										SET fecha_fin='$fecha', estado=1 
+												WHERE id_usuario_ticket_fase='$id_usuario_ticket_fase'");
 
 	 	$limitar=$fase_siguiente-1;
 
 		if(intval($fase_siguiente) < intval($total_fases)){
+			////////////////////////////////////////
+			//ultimo técnico o ninguno
+			$id_ultimo_tecnico = intval($rowultima['id_tecnico']);
+			//ha pasado a la siguiente fase con el mismo tencico
+			$exe_t = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario=$id_tecnico");
+		 	$row_t = mysqli_fetch_assoc($exe_t);
+		 	$nombre_tecnico = $row_t['nombre_completo'];
+		 	$mensaje="";
 
+			if ( $id_ultimo_tecnico != 0 ) {
+		 		if ( intval($id_ultimo_tecnico) == intval($id_tecnico) ) {
+		 			//insertamos fase siguiente
+					mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio, id_tecnico) 
+															VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT $limitar, 1), 0, '$fecha', $id_tecnico)" );
+		 			$mensaje="Tu ticket ha cambiado de estado!";
+		 		} else {
+					//ha habido un cambio de técnico
+					//ha pasado a la siguiente fase con el mismo tencico
+					$exe_t2 = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario=$id_tecnico");
+					$row_t2 = mysqli_fetch_assoc($exe_t2);
+					$nombre_tecnico2 = $row_t2['nombre_completo'];
+					$mensaje=$nombre_tecnico." no ha podido continuar atendiendo tu ticket, pero ".$nombre_tecnico2." se hará cargo de ella a partir de ahora.";
 
-			
+					//enviamos notificacion
+					$mensaje_2=$nombre_tecnico2." ha tomado tu ticket.";
+					mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
+															VALUES('$id_tecnico', 'Ticket Aceptada!', '$mensaje_2', '$fecha', 'ver_ticket_all', '$id_usuario_ticket', 1)" );
 
-					////////////////////////////////////////
-					//ultimo técnico o ninguno
-				 	$id_ultimo_tecnico = intval($rowultima['id_tecnico']);
-				 		//ha pasado a la siguiente fase con el mismo tencico
-				 		$exe_t = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario=$id_tecnico");
-						$row_t = mysqli_fetch_assoc($exe_t);
-						$nombre_tecnico = $row_t['nombre_completo'];
-						$mensaje="";
-
-				 	if($id_ultimo_tecnico!=0){
-
-				 		if(intval($id_ultimo_tecnico)==intval($id_tecnico)){
-
-				 			//insertamos fase siguiente
-							mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio, id_tecnico) VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT $limitar, 1), 0, '$fecha', $id_tecnico)" );
-
-				 			$mensaje="Tu ticket ha cambiado de estado!";
-
-				 		}else{
-				 			//ha habido un cambio de técnico
-				 			//ha pasado a la siguiente fase con el mismo tencico
-					 		$exe_t2 = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario=$id_tecnico");
-							$row_t2 = mysqli_fetch_assoc($exe_t2);
-							$nombre_tecnico2 = $row_t2['nombre_completo'];
-							$mensaje=$nombre_tecnico." no ha podido continuar atendiendo tu ticket, pero ".$nombre_tecnico2." se hará cargo de ella a partir de ahora.";
-
-							//enviamos notificacion
-							$mensaje_2=$nombre_tecnico2." ha tomado tu ticket.";
-							mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) VALUES('$id_tecnico', 'Ticket Aceptada!', '$mensaje_2', '$fecha', 'ver_ticket_all', '$id_usuario_ticket', 1)" );
-
-				 		}
-
-				 	}else{
-				 		
-				 		//insertamos fase siguiente
-						mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio, id_tecnico) VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT $limitar, 1), 0, '$fecha', $id_tecnico)" );
-
-
-				 		$mensaje=$nombre_tecnico." ha tomado tu ticket, muy pronto le estará dando solución!";
-				 	}
-				 	////////////////////////////////////////
-
-
-		}else{
+				}
+			} else {
+				//insertamos fase siguiente
+				mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio, id_tecnico) 
+														VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT $limitar, 1), 0, '$fecha', $id_tecnico)" );
+				$mensaje=$nombre_tecnico." ha tomado tu ticket, muy pronto le estará dando solución!";
+			}
+		} else {
 			//damos por finalizada ticket
-			mysqli_query($con, "UPDATE usuario_ticket SET estado=1, id_tecnico=$id_tecnico WHERE id_usuario_ticket=$id_usuario_ticket");
+			mysqli_query($con, "UPDATE usuario_ticket 
+													SET estado=1, id_tecnico=$id_tecnico 
+													WHERE id_usuario_ticket=$id_usuario_ticket");
 			$mensaje="Ticket dada por finalizada.";
 		}
-
-
 		//enviamos notificacion
-		mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) VALUES((SELECT id_usuario FROM usuario_ticket WHERE id_usuario_ticket=$id_usuario_ticket), 'Ticket Actualizada!', '$mensaje', '$fecha', 'ver_ticket', '$id_usuario_ticket', 1)" );
-
-
-
-	 }
-
-
+		mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
+												VALUES((SELECT id_usuario FROM usuario_ticket WHERE id_usuario_ticket=$id_usuario_ticket), 'Ticket Actualizada!', '$mensaje', '$fecha', 'ver_ticket', '$id_usuario_ticket', 1)" );
+  }
 }
 
 
@@ -727,15 +776,6 @@ if($_GET[accion]=='enviar_ticket_transferida'){
 	$sqls = mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
 															VALUES('$_POST[id_usuario]', '$titulo', '$mensaje', '$fecha', 'ver_ticket_aceptar_transferida', 
 																			'$_POST[id_usuario_ticket]', 1)" );
-
-	//provicional
-	$strQuery = "UPDATE usuario_ticket AS a
-							 INNER JOIN usuario_ticket_fase AS b ON a.id_usuario_ticket = b.id_usuario_ticket
-							 SET a.id_tecnico = {$_POST[id_tecnico]} ,
-								 b.id_tecnico = {$_POST[id_tecnico]}
-							 WHERE a.id_usuario_ticket = {$_POST[id_usuario_ticket]}";
-	mysqli_query($con, $strQuery);
-
 	if($sqls){
 	  echo json_encode("Ok");
 	}else{
@@ -765,21 +805,8 @@ if($_GET[accion]=='no_tomar_ticket'){
 	  echo json_encode("error");
 	}
 
-	
 }
 
-
-
-
-
-
-
-
-
 mysqli_close($con);
-
-
-
-
 
 ?>

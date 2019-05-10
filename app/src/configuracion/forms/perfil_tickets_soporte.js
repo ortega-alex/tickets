@@ -52,7 +52,7 @@ class tickets_soporte extends Component {
             :
             <Layout style={{ height: '100%', width: '100%', overflowY: 'auto', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }}>
               Cargando tickets...
-                </Layout>
+            </Layout>
           }
         </Layout>
         <div style={{ display: 'flex', flexDirection: 'row', height: '10%', alignItems: 'center', justifyContent: 'flex-end' }}>
@@ -77,14 +77,13 @@ class tickets_soporte extends Component {
           </div>
           <Button onClick={this.guardarPerfilTicketsSoporte.bind(this)} disabled={!this.state.cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
             Guardar Cambios
-            </Button>
+          </Button>
         </div>
       </div>
     )
   }
 
   onCheck = (checkedKeys, info) => {
-    console.log('onCheck', checkedKeys, info);
     let resultado = [];
     for (const objecto of checkedKeys) {
       if (!this.tiene_letras(objecto)) {
@@ -99,23 +98,19 @@ class tickets_soporte extends Component {
   guardarPerfilTicketsSoporte() {
     let Server = String(this.props.Server)
     this.setState({ cargando: true, cambios: false })
-    var actualizar = '1'
-    if (!this.state.actualizar) {
-      actualizar = '0'
-    }
+    var actualizar = ( this.state.actualizar == true ) ? 1 : 0;
+
     var data = new FormData();
     data.append('id_puesto', this.props.id_puesto);
     data.append('perfil', JSON.stringify(this.state.tickets_seleccionadas));
     data.append('tipo', this.props.tipo);
     data.append('actualizar', actualizar);
+    data.append('_usuario' , this.props._usuario);
 
     http._POST(Server + 'configuracion/puesto.php?accion=guardar_perfil_tickets_soporte', data).then(res => {
       if (res !== 'error') {
         this.setState({ cargando: false, cambios: false });
         message.info("Perfil de puesto actualizado correctamente.");
-        if (this.state.actualizar) {
-          this.actualizarPerfiSoportelUsuariosPuesto(this.props.id_puesto)
-        }
       } else {
         message.error("Error al actualizar.");
         this.setState({ cargando: false, cambios: true })
@@ -124,29 +119,7 @@ class tickets_soporte extends Component {
       message.error("Error al actualizar." + err);
       this.setState({ cargando: false, cambios: true })
     });
-  }
-
-  actualizarPerfiSoportelUsuariosPuesto(id_puesto) {
-    let Server = String(this.props.Server);
-    this.setState({ cargando: true, cambios: false });
-
-    var data = new FormData();
-    data.append('id_puesto', id_puesto);
-    data.append('tipo', this.props.tipo);
-
-    http._POST(Server + 'configuracion/puesto.php?accion=actualizar_perfil_soporte_usuarios_puesto', data).then(res => {
-      if (res !== 'error') {
-        this.setState({ cargando: false, cambios: false })
-        message.info("Usuarios actualizados correctamente.");
-      } else {
-        message.error("Error al actualizar usuarios.");
-        this.setState({ cargando: false, cambios: true })
-      }
-    }).catch(err => {
-      message.error("Error al actualizar usuarios." + err);
-      this.setState({ cargando: false, cambios: true });
-    });
-  }
+  } 
 
   tiene_letras(texto) {
     var letras = "abcdefghyjklmnñopqrstuvwxyz";

@@ -2,8 +2,11 @@ import React, { Component } from 'react';
 
 import TicketsAsignacion from "../configuracion/forms/tickets_asignacion";
 import TicketsSoporte from "../configuracion/forms/tickets_soporte";
+import PerfilUsuario from "../configuracion/forms/perfil_usuario";
 import _ from 'lodash';
-import { Icon, Form, Tabs, Tooltip, message, Switch } from 'antd';
+import { Tree, Icon, Form, Tabs, Tooltip, message, Switch } from 'antd';
+import http from '../services/http.services';
+import { AgGridReact, AgGridColumn } from 'ag-grid-react';
 
 const FormItem = Form.Item;
 const TabPane = Tabs.TabPane;
@@ -29,7 +32,7 @@ class ver_puesto extends Component {
 
   render() {
     const { usuario, cargando, tickets_all, active_tab } = this.state;
-    const { id_usuario, Server } = this.props;
+    const { id_usuario, Server , _usuario } = this.props;
     return (
       <div style={{ display: "flex", flex: 1, flexDirection: "column", width: "100%", height: "100%" }} >
         {usuario &&
@@ -72,12 +75,20 @@ class ver_puesto extends Component {
 
             <Tabs activeKey={String(active_tab)} defaultActiveKey={"1"} onChange={(key) => { this.setState({ active_tab: key }) }} style={{ display: 'flex', flex: 1, height: '100%', width: '100%', flexDirection: 'column', }} >
               {(tickets_all !== []) &&
-                <TabPane tab="Tickets" key="1"><PerfilTickets moveraSoporte={this.moveraSoporte.bind(this)} id_usuario={id_usuario} tickets_all={tickets_all} Server={Server} /></TabPane>
+                <TabPane tab="Tickets" key="1">
+                  <PerfilTickets _usuario={_usuario} moveraSoporte={this.moveraSoporte.bind(this)} id_usuario={id_usuario} tickets_all={tickets_all} Server={Server} />
+                </TabPane>
               }
-              <TabPane tab="Historial" key="2">Historial de Tickets</TabPane>
-              <TabPane tab="Módulos" key="3"><PerfilPermisos /></TabPane>
+              <TabPane tab="Historial" key="2">
+                <Historial id_usuario={id_usuario} Server={this.props.Server} />
+              </TabPane>
+              <TabPane tab="Módulos" key="3">
+                <PerfilPermisos _usuario={_usuario} id_usuario={id_usuario} Server={this.props.Server} />
+              </TabPane>
               {(parseInt(this.state.usuario.soporte) === 1) &&
-                <TabPane tab="Soporte" key="4"><PerfilTicketsSoporte usuario={usuario} id_usuario={id_usuario} tickets_all={tickets_all} Server={this.props.Server} /></TabPane>
+                <TabPane tab="Soporte" key="4">
+                  <PerfilTicketsSoporte  _usuario={_usuario} usuario={usuario} id_usuario={id_usuario} tickets_all={tickets_all} Server={this.props.Server} />
+                </TabPane>
               }
             </Tabs>
           </div>
@@ -89,7 +100,7 @@ class ver_puesto extends Component {
   moveraSoporte() {
     if (parseInt(this.state.usuario.soporte) === 1) {
       setTimeout(() => {
-        this.setState({ active_tab: 4 })
+        this.setState({ active_tab: 4 });
       }, 1000);
     }
   }
@@ -98,38 +109,26 @@ class ver_puesto extends Component {
 
     let Server = String(this.props.Server);
     this.setState({ cargando: true });
-    var cambiar_a = 1;
-
-    if (!estado) {
-      cambiar_a = 0
-    }
+    var cambiar_a =  (!estado) ? 0 : 1;
 
     var data = new FormData();
     data.append('id_usuario', this.state.usuario.id_usuario);
     data.append('estado', cambiar_a);
+    data.append('_usuario' , this.props._usuario);
+    data.append('username' , this.props.usuario_ficha.username);
 
-    fetch(Server + 'configuracion/usuario.php?accion=cambiar_estado_soporte', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-      },
-      body: data
-    })
-      .then((response) => response.json())
-      .then((responseJson) => {
-
-        if (responseJson !== 'error') {
-          this.setState({ cargando: false })
-          this.cargarUsuario()
-          this.props.getUsuarios()
+    http._POST(Server + 'configuracion/usuario.php?accion=cambiar_estado_soporte', data).then((res) => {
+        if (res !== 'error') {
+          this.setState({ cargando: false });
+          this.cargarUsuario();
+          this.props.getUsuarios();
         } else {
           message.error("Error al actualizar estado.");
-          this.setState({ cargando: false })
+          this.setState({ cargando: false });
         }
-      })
-      .catch((error) => {
-        message.error("Error al actualizar estado." + error);
-        this.setState({ cargando: false })
+      }).catch((err) => {
+        message.error("Error al actualizar estado." + err);
+        this.setState({ cargando: false });
       });
   }
 
@@ -137,56 +136,36 @@ class ver_puesto extends Component {
 
     let Server = String(this.props.Server);
     this.setState({ cargando: true });
-    var cambiar_a = 1;
-
-    if (!estado) {
-      cambiar_a = 0
-    }
+    var cambiar_a =  (!estado) ? 0 : 1;
 
     var data = new FormData();
     data.append('id_usuario', this.state.usuario.id_usuario);
-    data.append('estado', cambiar_a);
+    data.append('estado', cambiar_a);    
+    data.append('_usuario', this.props._usuario);
 
-    fetch(Server + 'configuracion/usuario.php?accion=cambiar_estado', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-      },
-      body: data
-    })
-      .then((response) => response.json())
-      .then((responseJson) => {
-        if (responseJson !== 'error') {
-          this.setState({ cargando: false })
-          this.cargarUsuario()
-          this.props.getUsuarios()
+    http._POST(Server + 'configuracion/usuario.php?accion=cambiar_estado' , data).then((res) => {
+        if (res !== 'error') {
+          this.setState({ cargando: false });
+          this.cargarUsuario();
+          this.props.getUsuarios();
         } else {
           message.error("Error al actualizar puestos.");
-          this.setState({ cargando: false })
+          this.setState({ cargando: false });
         }
-      })
-      .catch((error) => {
-        message.error("Error al actualizar puestos." + error);
-        this.setState({ cargando: false })
+      }).catch((err) => {
+        message.error("Error al actualizar puestos." + err);
+        this.setState({ cargando: false });
       });
   }
 
   getTicketsAll() {
-    let Server = String(this.props.Server)
-    this.setState({ cargando: true })
+    let Server = String(this.props.Server);
+    this.setState({ cargando: true });
 
-    fetch(Server + 'configuracion/ticket.php?accion=get_tickets_all', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((responseJson) => {
-
-        if (responseJson !== 'error') {
+    http._GET(Server + 'configuracion/ticket.php?accion=get_tickets_all').then((res) => {
+        if (res !== 'error') {
           let resultado = [];
-          for (const objecto of responseJson) {
+          for (const objecto of res) {
             resultado.push(
               {
                 categoria: objecto.categoria,
@@ -219,16 +198,15 @@ class ver_puesto extends Component {
             )
             i++;
           }
-          this.setState({ tickets_all: agrupado_final })
-          this.setState({ cargando: false })
+          this.setState({ tickets_all: agrupado_final });
+          this.setState({ cargando: false });
         } else {
           message.error("Error al cargar Categorías.");
           this.setState({ cargando: false })
         }
-      })
-      .catch((error) => {
-        message.error("Error al cargar Categorías." + error);
-        this.setState({ cargando: false })
+      }).catch((err) => {
+        message.error("Error al cargar Categorías." + err);
+        this.setState({ cargando: false });
       });
   }
 
@@ -239,26 +217,16 @@ class ver_puesto extends Component {
     var data = new FormData();
     data.append('id_usuario', this.props.usuario_ficha.id_usuario);
 
-    fetch(Server + 'configuracion/usuario.php?accion=one', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-      },
-      body: data
-    })
-      .then((response) => response.json())
-      .then((responseJson) => {
-
-        if (responseJson !== 'error') {
-          this.setState({ usuario: responseJson });
+    http._POST(Server + 'configuracion/usuario.php?accion=one', data).then((res) => {
+        if (res !== 'error') {
+          this.setState({ usuario: res });
           this.setState({ cargando: false });
         } else {
           message.error("Error al cargar Departamento.");
           this.setState({ cargando: false });
         }
-      })
-      .catch((error) => {
-        message.error("Error al cargar Departamento." + error);
+      }).catch((err) => {
+        message.error("Error al cargar Departamento." + err);
         this.setState({ cargando: false });
       });
   }
@@ -276,12 +244,57 @@ class ver_puesto extends Component {
 
 class PerfilPermisos extends Component {
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      cargando: false,
+      perfiles: undefined
+    }
+  }
+
+  componentDidMount() {
+    this.getPerfilUsuario();
+  }
+
   render() {
+    const { perfiles } = this.state;
+    const { _usuario , Server , id_usuario } = this.props;
     return (
-      <div>
-        Perfil de permisos (módulos del sistema).
-     </div>
+      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', height: '100%' }}>
+        {perfiles &&
+          <Tabs
+            defaultActiveKey={perfiles !== undefined ? perfiles[0].id_puesto : undefined}
+            tabPosition={"left"}
+          >
+            {perfiles.map((item) => (
+              <TabPane tab={item.puesto} key={item.id_puesto}>
+                <PerfilUsuario _usuario={_usuario} Server={Server} puesto={item} id_usuario={id_usuario} />
+              </TabPane>
+            ))}
+          </Tabs>
+        }
+        {!perfiles &&
+          <label style={{ textAlign: 'center' }}>No es posible que un usuario sin modulos asignados pueda ingresar al sistema.</label>
+        }
+      </div>
     )
+  }
+
+  getPerfilUsuario() {
+    const { Server, id_usuario } = this.props;
+    http._GET(Server + "configuracion/usuario.php?accion=get_perfil_usuario&id_usuario=" + id_usuario).then(res => {
+      if (res["err"] == "false") {
+        this.setState({
+          perfiles: res['perfiles']
+        });
+      } else {
+        message.info("no se encontro informacion");
+      }
+      this.setState({ cargando: false });
+    }).catch(err => {
+      message.error("Error al obtener permisos del usuario." + err);
+      this.setState({ cargando: false });
+    });
   }
 }
 
@@ -306,8 +319,10 @@ class PerfilTickets extends Component {
             defaultActiveKey={this.state.usuario_asignaciones !== undefined ? this.state.usuario_asignaciones[0].id_cargo.toString() : undefined}
             tabPosition={"left"}
           >
-            {this.state.usuario_asignaciones.map((item, index) => (
-              <TabPane tab={item.puesto + ' en ' + item.departamento} key={item.id_cargo}><TicketsAsignacion item={item} Server={this.props.Server} id_puesto={item.id_puesto} id_cargo={item.id_cargo} id_usuario={item.id_usuario} tickets_all={this.props.tickets_all} /></TabPane>
+            {this.state.usuario_asignaciones.map((item) => (
+              <TabPane tab={item.puesto + ' en ' + item.departamento} key={item.id_cargo}>
+                <TicketsAsignacion item={item} _usuario={this.props._usuario} Server={this.props.Server} id_puesto={item.id_puesto} id_cargo={item.id_cargo} id_usuario={item.id_usuario} tickets_all={this.props.tickets_all} />
+              </TabPane>
             ))}
           </Tabs>
         }
@@ -320,37 +335,28 @@ class PerfilTickets extends Component {
 
   getAsignaciones() {
 
-    let Server = String(this.props.Server)
-    this.setState({ cargando: true })
+    let Server = String(this.props.Server);
+    this.setState({ cargando: true });
+
     var data = new FormData();
     data.append('id_usuario', this.props.id_usuario);
 
-    fetch(Server + 'configuracion/usuario.php?accion=get_asignaciones_one', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-      },
-      body: data
-    })
-      .then((response) => response.json())
-      .then((responseJson) => {
-
-        if (responseJson !== 'error') {
-          if (responseJson.length > 0) {
-            this.setState({ usuario_asignaciones: responseJson })
-          } else {
-            this.props.moveraSoporte()
-          }
-          this.setState({ cargando: false })
+    http._POST(Server + 'configuracion/usuario.php?accion=get_asignaciones_one', data).then(res => {
+      if (res !== 'error') {
+        if (res.length > 0) {
+          this.setState({ usuario_asignaciones: res });
         } else {
-          message.error("Error al obtener asignaciones.");
-          this.setState({ cargando: false })
+          this.props.moveraSoporte();
         }
-      })
-      .catch((error) => {
-        message.error("Error al obtener asignaciones." + error);
-        this.setState({ cargando: false })
-      });
+        this.setState({ cargando: false });
+      } else {
+        message.error("Error al obtener asignaciones.");
+        this.setState({ cargando: false });
+      }
+    }).catch(err => {
+      message.error("Error al obtener asignaciones." + err);
+      this.setState({ cargando: false });
+    });
   }
 
   tiene_letras(texto) {
@@ -379,7 +385,7 @@ class PerfilTicketsSoporte extends Component {
   }
 
   render() {
-
+    const { usuario , Server , _usuario , id_usuario , tickets_all } = this.props;
     return (
       <div style={{ display: 'flex', flex: 1, flexDirection: 'column', height: '100%' }}>
         {this.state.usuario_asignaciones &&
@@ -387,9 +393,13 @@ class PerfilTicketsSoporte extends Component {
             defaultActiveKey={"0"}
             tabPosition={"left"}
           >
-            <TabPane tab={"GLOBAL"} key={"0"}><TicketsSoporte tipo={'global'} usuario={this.props.usuario} Server={this.props.Server} id_puesto={0} id_cargo={0} id_usuario={this.props.id_usuario} tickets_all={this.props.tickets_all} /></TabPane>
-            {this.state.usuario_asignaciones.map((item, index) => (
-              <TabPane tab={item.puesto + ' en ' + item.departamento} key={item.id_cargo}><TicketsSoporte tipo={'asignacion'} soporte={item.soporte} usuario={this.props.usuario} item={item} Server={this.props.Server} id_puesto={item.id_puesto} id_cargo={item.id_cargo} id_usuario={item.id_usuario} tickets_all={this.props.tickets_all} /></TabPane>
+            <TabPane tab={"GLOBAL"} key={"0"}>
+              <TicketsSoporte _usuario={_usuario} tipo={'global'} usuario={usuario} Server={Server} id_puesto={0} id_cargo={0} id_usuario={id_usuario} tickets_all={tickets_all} />
+            </TabPane>
+            {this.state.usuario_asignaciones.map((item) => (
+              <TabPane tab={item.puesto + ' en ' + item.departamento} key={item.id_cargo}>
+                <TicketsSoporte  _usuario={_usuario} tipo={'asignacion'} soporte={item.soporte} usuario={usuario} item={item} Server={Server} id_puesto={item.id_puesto} id_cargo={item.id_cargo} id_usuario={item.id_usuario} tickets_all={tickets_all} />
+              </TabPane>
             ))}
           </Tabs>
         }
@@ -404,27 +414,17 @@ class PerfilTicketsSoporte extends Component {
     var data = new FormData();
     data.append('id_usuario', this.props.id_usuario);
 
-    fetch(Server + 'configuracion/usuario.php?accion=get_asignaciones_one', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-      },
-      body: data
-    })
-      .then((response) => response.json())
-      .then((responseJson) => {
-
-        if (responseJson !== 'error') {
-          this.setState({ cargando: false, usuario_asignaciones: responseJson })
-        } else {
-          message.error("Error al obtener asignaciones.");
-          this.setState({ cargando: false })
-        }
-      })
-      .catch((error) => {
-        message.error("Error al obtener asignaciones." + error);
+    http._POST(Server + 'configuracion/usuario.php?accion=get_asignaciones_one', data).then(res => {
+      if (res !== 'error') {
+        this.setState({ cargando: false, usuario_asignaciones: res })
+      } else {
+        message.error("Error al obtener asignaciones.");
         this.setState({ cargando: false })
-      });
+      }
+    }).catch(err => {
+      message.error("Error al obtener asignaciones." + err);
+      this.setState({ cargando: false })
+    });
   }
 
   tiene_letras(texto) {
@@ -436,6 +436,68 @@ class PerfilTicketsSoporte extends Component {
       }
     }
     return false;
+  }
+}
+
+class Historial extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      historial: []
+    };
+  }
+
+  componentDidMount() {
+    this.getHistorial();
+  }
+
+  render() {
+    const { historial } = this.state;
+    return (
+      <div>
+      <div style={{ display: 'flex', flexDirection: 'row' }}>
+          <h2 style={{ display: 'flex', flex: 1, justifyContent: 'center', }}>
+              Historial
+          </h2>
+      </div>
+      { historial.length > 0 ?
+        <div
+            className="ag-theme-balham"
+            style={{
+                height: '300px',
+                width: '100%',
+            }}
+        >
+            <AgGridReact
+                floatingFilter={true}
+                enableSorting={true}
+                animateRows={true}
+                enableColResize={true}
+                rowSelection='single'
+                onGridReady={(params) => { params.api.sizeColumnsToFit(); }}
+                rowData={historial}>
+                <AgGridColumn headerName="Detalle" field={"accion"} />
+                <AgGridColumn headerName="Fecha" width={60} field="creacion" />              
+            </AgGridReact>
+        </div>
+      : 
+        <div style={{ textAlign: 'center' , padding: 10}}>
+           <label>El usuario no a realizadon ningun cambio en el sistema.</label>
+        </div>
+      }
+  </div>
+    )
+  }
+
+  getHistorial() {
+    const { id_usuario, Server } = this.props;
+    http._GET(Server + "configuracion/usuario.php?accion=get_historial&id_usuario=" + id_usuario).then(res => {
+      this.setState({ historial: res });
+    }).catch(err => {
+      message.error("Error al obtener asignaciones." + err);
+      this.setState({ cargando: false })
+    });
   }
 }
 

@@ -7,7 +7,6 @@ import { Icon, Divider, Form, Input, Tooltip, Upload, message, Button, Switch } 
 import http from '../services/http.services';
 
 const FormItem = Form.Item;
-var subiendo = false
 
 class inicio extends Component {
 
@@ -118,7 +117,7 @@ class inicio extends Component {
                   label={(
                     <span>
                       Activo&nbsp;
-                        <Tooltip title="Si inactivas un departamento, sus usarios pertenecientes no podrán crear tickets.">
+                      <Tooltip title="Si inactivas un departamento, sus usarios pertenecientes no podrán crear tickets.">
                         <Icon type="question-circle-o" />
                       </Tooltip>
                     </span>
@@ -128,23 +127,6 @@ class inicio extends Component {
                     <Switch defaultChecked={frm_activo} onChange={(valor) => { this.setState({ frm_activo: valor }) }} />
                   )}
                 </FormItem>
-                <Upload
-                  style={{ display: 'flex', flex: 1 }}
-                  action={('//jsonplaceholder.typicode.com/posts/')}
-                  headers={{
-                    authorization: 'authorization-text',
-                  }}
-                  onChange={this.onChange}
-                  beforeUpload={this.beforeUpload}
-                  multiple={false}
-                  disabled={subiendo}
-                  listType='picture'
-                >
-                  <Button>
-                    <Icon type="upload" /> Imagen/Logo
-                    </Button>
-                </Upload>
-
               </div>
             </div>
             <div style={{ display: 'flex', height: "10%", justifyContent: 'center' }}>
@@ -187,7 +169,7 @@ class inicio extends Component {
                 </span>
               </Button>
             </div>
-            <VerDepartamento getDepartamentos={this.getDepartamentos.bind(this)} id_departamento={departamento_edicion.id_departamento} Server={Server} />
+            <VerDepartamento _usuario={this.props._usuario} getDepartamentos={this.getDepartamentos.bind(this)} id_departamento={departamento_edicion.id_departamento} Server={Server} />
           </div>
         }
       </Rodal>
@@ -228,6 +210,7 @@ class inicio extends Component {
         data.append('nombre_departamento', values.nombre_dpto);
         data.append('ubicacion_dpto', values.ubicacion_dpto);
         data.append('estado', frm_activo ? '1' : '0');
+        data.append('_usuario', this.props._usuario);
 
         if (!departamento_edicion) {
           http._POST(server + 'configuracion/departamento.php?accion=nuevo', data).then(res => {
@@ -296,35 +279,6 @@ class inicio extends Component {
     });
   }
 
-  onChange(info) {
-    if (info.file.status !== 'uploading') {
-      console.log(info.file, info.fileList);
-    } else {
-      subiendo = true
-    }
-
-    if (info.file.status === 'done') {
-      subiendo = false
-      message.success(`${info.file.name} imagen adjuntada correctamente.`);
-      //alert(JSON.stringify(info.fileList))
-    } else if (info.file.status === 'error') {
-      subiendo = false
-      message.error(`${info.file.name} error en subida.`);
-    }
-  }
-
-  beforeUpload(file) {
-    const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
-    if (!isJPG) {
-      message.error('Únicamente puedes subir imágenes (JPEG y PNG)!');
-    }
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error('El tamaño de la imagen debe ser menor a 2MB!');
-    }
-    return isJPG && isLt2M;
-  }
-
   visualizarDepartamento(recibo) {
     this.setState({ modal_Dpto: false })
     this.setState({ departamento_edicion: recibo }, () => {
@@ -334,7 +288,7 @@ class inicio extends Component {
 
   solicitarEdicion() {
     const { departamento_edicion, modal_nuevoDpto } = this.state;
-    if (departamento_edicion.estado === '1') {
+    if (departamento_edicion.estado == '1') {
       this.setState({ frm_activo: true });
     } else {
       this.setState({ frm_activo: false });

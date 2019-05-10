@@ -2,15 +2,16 @@ import React, { Component } from 'react';
 
 import Rodal from 'rodal';
 import { Grid } from 'semantic-ui-react'
-import { Icon, DatePicker, Form, Radio, Input, Tooltip, message, Select, Button, Switch } from 'antd';
+import { Icon, DatePicker, Form, Radio, Input, Tooltip, message, Select, Button, Switch , Upload  } from 'antd';
 import http from '../services/http.services';
 
 var moment = require('moment');
+var subiendo = false;
 
 const FormItem = Form.Item;
 const Option = Select.Option;
-const RadioGroup = Radio.Group;
-const RadioButton = Radio.Button;
+//const RadioGroup = Radio.Group;
+//const RadioButton = Radio.Button;
 const { TextArea } = Input;
 const Search = Input.Search;
 
@@ -33,6 +34,7 @@ class abrir_ticket extends Component {
       frm_programada: false,
       ticket_usuario: undefined,
       cambiar_valores: false,
+      files: FileList
     }
   }
 
@@ -57,7 +59,7 @@ class abrir_ticket extends Component {
               />
             </div>
           }
-          <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'flex-start' }}>
+         {/* <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'flex-start' }}>
             {(this.state.asignaciones_usuario !== [] && this.state.asignaciones_usuario.length > 1) &&
               <RadioGroup onChange={(value) => { this.cambioAsignacion(value.target.value) }} value={this.state.asignacion_seleccionada} defaultValue={this.state.asignacion_seleccionada} buttonStyle="solid">
                 <RadioButton value={undefined}>Todas</RadioButton>
@@ -68,13 +70,13 @@ class abrir_ticket extends Component {
                 ))}
               </RadioGroup>
             }
-          </div>
+          </div> */}
         </div>
-        <div style={{ display: 'flex', flex: 1, height: '100%', width: '100%', paddingLeft: '20px', paddingRight: '20px' }}>
-          {(this.state.tickets_usuario_resultado !== []) &&
-            <Grid container columns={4} padded stackable>
+        <div style={{display:'flex', flexDirection:'column',  width:'100%', borderRadius:15}}>
+          {(this.state.tickets_usuario_resultado !== []) &&            
+              <Grid container columns={4} padded stackable style={{height:'100%' , overflowY:'auto'}}>
               {this.state.tickets_usuario_resultado.map((ticket, i) => (
-                <Grid.Column key={i}>
+                <Grid.Column key={i} >
                   <ItemTicket ticket={ticket} abrirTicket={this.abrirTicket.bind(this)} />
                 </Grid.Column>
               ))}
@@ -91,7 +93,7 @@ class abrir_ticket extends Component {
         this.cargarTicket(ticket.id_ticket);
         this.getDepartamentosUsuario();
         this.getUsuariosDepartamento(ticket.id_departamento);
-        this.setState({ modal_Ticket: true });
+        this.setState({ files : FileList , modal_Ticket: true });
       })
     } else {
       message.warning("Ticket no disponible temporalmente. Perdona los inconvenientes!");
@@ -136,6 +138,16 @@ class abrir_ticket extends Component {
 
   modalTicket() {
 
+    const propsUpload = {
+      disabled : subiendo ,
+      className : "upload-list-inline",
+      onRemove:this.borrarAdjunto.bind(this),
+      onChange: this.onChange,
+      multiple: true,
+      listType: "picture",
+      customRequest: this.subirAdjunto.bind(this)
+    };
+
     const { getFieldDecorator } = this.props.form;
     return (
       <Rodal
@@ -144,13 +156,38 @@ class abrir_ticket extends Component {
         onClose={() => { this.setState({ modal_Ticket: !this.state.modal_Ticket, ticket_nueva: undefined, cambiar_valores: false, frm_programada: false, ticket_usuario: undefined }) }}
         closeMaskOnClick
         showCloseButton={true}
-        customStyles={{ borderRadius: 10, height: '50%', width: '50%' }}
+        customStyles={{ borderRadius: 10, height: '70%', width: '50%' }}
       >
         {(this.state.modal_Ticket && this.state.ticket_nueva) &&
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', height: '100%', width: '100%' }}>
             <Form onSubmit={this.aperturarTicket.bind(this)} style={{ height: "100%" }}>
-              <div style={{ display: 'flex', flexDirection: 'row', height: '60%', width: '100%' }}>
-                <div style={{ display: 'flex', width: '70%', height: '100%', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'row', height: '50%', width: '100%' }}>
+                <div style={{ display: 'flex', width: '70%', height: '80%', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }}>
+                { this.state.departamentos_usuario && 
+                  <div style={{ display: 'flex', height: '15%', width: '100%' }}>
+                    <FormItem  style={{ width: '25%' , paddingTop:'10%' }}>
+                      {getFieldDecorator('departamento', {
+                        rules: [{ required: true, message: 'Por favor selecciona' }], initialValue: (this.state.frm_departamento ? String(this.state.frm_departamento) : undefined)
+                      })(
+                        <Select
+                          showSearch
+                          autoClearSearchValue
+                          placeholder="Selecciona Departamento"
+                          optionFilterProp="children"
+                          onChange={(seleccion) => { this.getUsuariosDepartamento(seleccion); this.setState({ frm_departamento: seleccion }) }}
+                          style={{ width: '80%' }}
+                          filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                        >
+                          {this.state.departamentos_usuario.map((departamento) => (
+                            <Option value={departamento.id_departamento}>{departamento.departamento}</Option>
+                          ))}
+
+                        </Select>
+                      )}
+                    </FormItem>
+                  </div>
+                }
+                  
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', lineHeight: 0 }}>
                     {(this.state.ticket_nueva !== undefined) && <h2 style={{ textAlign: 'center' }}>{this.state.ticket_nueva.nombre_ticket}</h2>}
                     {(this.state.ticket_nueva !== undefined) && <div style={{ textAlign: 'center' }}>{this.state.ticket_nueva.categoria.categoria}>{this.state.ticket_nueva.sub_categoria.sub_categoria}</div>}
@@ -173,15 +210,15 @@ class abrir_ticket extends Component {
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', height: '20%', width: '100%', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', height: '15%', width: '100%', justifyContent: 'flex-end' , marginBottom:'10px'}}>
                 {(!this.state.cambiar_valores) &&
                   <div style={{ display: 'flex', height: "100%", width: '50%', justifyContent: 'center', alignItems: 'center' }}>
-                    <Button onClick={() => { this.setState({ cambiar_valores: true, frm_empleado: undefined }) }} style={{ width: '50%', justifyContent: 'center' }}>
-                      Para un tercero
-                </Button>
+                    <Button onClick={() => { this.setState({ cambiar_valores: true, frm_empleado: undefined }) }} style={{ width: '50%', justifyContent: 'center' , margin:'0' , padding: '0' }}>
+                      Para un tercero 
+                    </Button>
                   </div>
                 }
-                {(this.state.departamentos_usuario != undefined && this.state.cambiar_valores) &&
+                {/*(this.state.departamentos_usuario != undefined && this.state.cambiar_valores) &&
                   <FormItem label="Dpto." style={{ width: '25%' }}>
                     {getFieldDecorator('departamento', {
                       rules: [{ required: true, message: 'Por favor selecciona' }], initialValue: (this.state.frm_departamento ? String(this.state.frm_departamento) : undefined)
@@ -202,7 +239,7 @@ class abrir_ticket extends Component {
                       </Select>
                     )}
                   </FormItem>
-                }
+                        */}
                 {(this.state.empleados_departamento !== undefined && this.state.cambiar_valores) &&
                   <FormItem label="Empleado" style={{ width: '25%' }}>
                     {getFieldDecorator('sub_categoria', {
@@ -256,16 +293,60 @@ class abrir_ticket extends Component {
                   </FormItem>
                 }
               </div>
-              <div style={{ display: 'flex', height: "20%", width: '100%', justifyContent: 'center', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', height: "20%", width: '100%' , overflowY:'auto' }}>
+                <Upload
+                  {...propsUpload} 
+                >
+                  <Button>
+                    <Icon type="upload" /> Imagen/Logo
+                  </Button>
+                </Upload>
+              </div>
+              <div style={{ display: 'flex', height: "10%", width: '100%', justifyContent: 'center', alignItems: 'flex-end' }}>
                 <Button disabled={this.state.cargando} type="primary" htmlType="submit" style={{ display: 'flex', width: '90%', justifyContent: 'center' }}>
                   Aperturar
-              </Button>
+                </Button>
               </div>
             </Form>
           </div>
         }
       </Rodal>
     )
+  }
+
+  onChange(info) {
+    if (subiendo == true) {
+      info.file.status = "done";
+      subiendo = false
+      message.success(`${info.file.name} imagen adjuntada correctamente.`);
+    }
+  }
+
+  subirAdjunto({ onSuccess, onError, file }){ 
+    var temp = Array.from(this.state.files);
+    temp.push(file);
+    this.setState({ files: temp });
+    subiendo = true;
+  }
+
+  borrarAdjunto(adjunto){
+    var temp = Array.from(this.state.files);
+    temp = temp.filter(item => {
+      return adjunto.uid != item.uid;
+    });
+    this.setState({ files: temp });
+  }
+
+  beforeUpload(file) {
+    const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
+    if (!isJPG) {
+      message.error('Únicamente puedes subir imágenes (JPEG y PNG)!');
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('El tamaño de la imagen debe ser menor a 2MB!');
+    }
+    return isJPG && isLt2M;
   }
 
   aperturarTicket(e) {
@@ -288,12 +369,17 @@ class abrir_ticket extends Component {
         data.append('id_cargo', this.state.ticket_usuario.id_cargo);
         data.append('id_ticket', this.state.ticket_nueva.id_ticket);
         data.append('nivel_prioridad', this.state.ticket_nueva.prioridad_recomendada);
+        if (  this.state.files.length > 0 ) {
+          this.state.files.forEach((e , i) => {
+            data.append('file'+i, e );
+          });
+        }        
 
         http._POST(Server + 'configuracion/ticket.php?accion=aperturar_ticket', data).then((res) => {
           if (res !== 'error') {
             this.setState({ modal_Ticket: false });
             message.success("Tickdet Enviada correctamente.");
-            this.setState({ cargando: false });
+            this.setState({ cargando: false , files : FileList });
             this.props.cerrarModalTickets();
           } else {
             message.error("Ha ocurrido un error.");
@@ -472,10 +558,10 @@ class ItemTicket extends Component {
         <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ display: 'flex', flex: 1, flexDirection: 'row', width: '30%', height: '100%', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
             {(this.props.ticket.estado_final.estado === 'Activo') &&
-              <Icon type="tool" style={{ color: '#5DADE2', fontSize: 40, textAlign: 'center' }} />
+              <img src={require('../media/ticket.png')} alt="actico" width="90px" />
             }
             {(this.props.ticket.estado_final.estado === 'Inactivo') &&
-              <Icon type="tool" style={{ color: '#D0D3D4', fontSize: 40, textAlign: 'center' }} />
+              <img src={require('../media/ticket_disable.png')} alt="actico" width="90px" />
             }
           </div>
           <div style={{ width: '70%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
@@ -485,11 +571,11 @@ class ItemTicket extends Component {
             <div style={{ fontSize: 10, whiteSpace: 'pre-wrap' }}>
               {this.props.ticket.descripcion}
             </div>
-            <label style={{ fontSize: 10, color: '#B3B6B7' }}>{this.props.ticket.puesto} > {this.props.ticket.departamento}</label>
+            {/*<label style={{ fontSize: 10, color: '#B3B6B7' }}>{this.props.ticket.puesto} > {this.props.ticket.departamento}</label>*/}
           </div>
         </div>
         {(this.props.ticket.estado_final.estado !== 'Activo') &&
-          <div style={{ display: 'flex', flex: 1, justifyContent: 'center', height: '40%', alignItems: 'flex-end', fontSize: 8 }}>
+          <div style={{ display: 'flex', flex: 1, justifyContent: 'center', height: '10%', alignItems: 'flex-end', fontSize: 8 }}>
             {this.props.ticket.estado_final.motivo}
           </div>
         }

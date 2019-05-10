@@ -5,7 +5,7 @@ import { Router, Route, Link } from "react-router-dom";
 import { PropagateLoader } from 'react-spinners';
 import InicioView from "../src/inicio/inicio";
 import CalendarioView from "../src/calendario/calendario";
-import PerfilView from "../src/perfil/perfil";
+//import PerfilView from "../src/perfil/perfil";
 
 import DepartamentosView from "../src/configuracion/departamentos";
 import PuestosView from "../src/configuracion/puestos";
@@ -32,6 +32,7 @@ class App extends Component {
       showMenu: false,
       pathname: '',
       session_id: undefined,
+      _usuario: undefined
     }
   }
 
@@ -45,14 +46,18 @@ class App extends Component {
 
   render() {
 
-    const { session_id, pathname, cargando } = this.state;
+    const { session_id, pathname, cargando , _usuario } = this.state;
     return (
       <Router history={history}>
         <div style={{ display: "flex", width: "100%", height: "100vh" }} >
           {(session_id) &&
             <div style={{ display: "flex", width: "100%", height: "100%" }} >
               <div style={{ width: "20%", height: "100%", background: "white" }}>
-                <Menu mode="inline" selectedKeys={[pathname]} openKeys={['5']} style={{ height: '100%' }} >
+                <Menu 
+                  mode="inline" 
+                  defaultSelectedKeys={["pathname"]}
+                  style={{ height: '100%' }} 
+                >
                   <Menu.Item key="0">
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'row', padding: '10px', textAlign: 'left' }}>
                       <h3>Menú Principal</h3>
@@ -65,10 +70,9 @@ class App extends Component {
                       </div>
                     </div>
                   </Menu.Item>
-                  <Menu.Item key="/"><Link to="" onClick={() => { this.setState({ pathname: "/" }) }}><Icon type="dashboard" />Dashboard</Link></Menu.Item>
+                  <Menu.Item key="/"><Link to="" onClick={() => { this.setState({ pathname: "/" }) }}><Icon type="dashboard" />Indicadores</Link></Menu.Item>
                   <Menu.Item key="/inicio"><Link to="/inicio" onClick={() => { this.setState({ pathname: "/inicio" }) }}><Icon type="home" />Inicio</Link></Menu.Item>
                   <Menu.Item key="/calendario"><Link to="/calendario" onClick={() => { this.setState({ pathname: "/calendario" }) }}><Icon type="calendar" />Calendario</Link></Menu.Item>
-                  <Menu.Item key="/perfil"><Link to="/perfil" onClick={() => { this.setState({ pathname: "/perfil" }) }}><Icon type="smile" />Perfil</Link></Menu.Item>
                   <SubMenu key="5" title={<span><Icon type="setting" /><span>Configuración</span></span>}>
                     <Menu.Item key="/configuracion/usuarios">
                       <Link to="/configuracion/usuarios" onClick={() => { this.setState({ pathname: "/configuracion/usuarios" }) }}>
@@ -96,16 +100,15 @@ class App extends Component {
               <div style={{ display: 'flex', flex: 1, width: "80%", height: "100%" }}>
 
                 {pathname == '/' &&
-                  <DashboadView Server={Server} />
+                  <DashboadView Server={Server} _usuario={_usuario} />
                 }
 
-                <Route path="/inicio" render={() => <InicioView Server={Server} />} />
-                <Route path="/configuracion/departamentos" render={() => <DepartamentosView Server={Server} />} />
-                <Route path="/configuracion/puestos" render={() => <PuestosView Server={Server} />} />
-                <Route path="/configuracion/tickets" render={() => <TicketsView Server={Server} />} />
-                <Route path="/configuracion/usuarios" render={() => <UsuariosView Server={Server} />} />
+                <Route path="/inicio" render={() => <InicioView Server={Server} _usuario={_usuario} />} />
+                <Route path="/configuracion/departamentos" render={() => <DepartamentosView Server={Server} _usuario={_usuario} />} />
+                <Route path="/configuracion/puestos" render={() => <PuestosView Server={Server} _usuario={_usuario} />} />
+                <Route path="/configuracion/tickets" render={() => <TicketsView Server={Server} _usuario={_usuario} />} />
+                <Route path="/configuracion/usuarios" render={() => <UsuariosView Server={Server} _usuario={_usuario} />} />
                 <Route path="/calendario" render={() => <CalendarioView Server={Server} />} />
-                <Route path="/perfil" render={() => <PerfilView Server={Server} />} />
               </div>
             </div>
           }
@@ -141,22 +144,31 @@ class App extends Component {
   }
 
   levantamosSesion(responseJson) {
-    AsyncStorage.setItem("session_id", responseJson);
-    this.setState({ session_id: responseJson });
+    AsyncStorage.setItem("session_id", responseJson["session_id"]);
+    this.setState({ 
+      session_id:  responseJson["session_id"] ,
+      _usuario: responseJson["id_usuario"]
+    });
   }
 
   async comprobarSesion() {
-    this.setState({ cargando: true })
-    var session_id = await AsyncStorage.getItem("session_id")
+    this.setState({ cargando: true });
+    var session_id = await AsyncStorage.getItem("session_id");
 
     var data = new FormData();
     data.append('session_id', session_id);
 
     http._POST(Server + 'acceso/sesion_check.php', data).then((res) => {
       if (res === 'nosesion') {
-        this.setState({ session_id: undefined })
+        this.setState({ 
+          session_id: undefined ,
+          _usuario: undefined
+        });
       } else if (res) {
-        this.setState({ session_id: res })
+        this.setState({ 
+          session_id: res ,
+          _usuario: res["id_usuario"]
+        });
       }
       this.setState({ cargando: false });
     }).catch(err => {
@@ -172,11 +184,11 @@ class App extends Component {
     data.append('session_id', session_id);
 
     http._POST(Server + 'acceso/cerrar_session.php', data).then(() => {
-      this.comprobarSesion()
-      this.setState({ cargando: false })
+      this.comprobarSesion();
+      this.setState({ cargando: false });
     }).catch(err => {
       message.error("Ha ocurrido un error: " + err);
-      this.setState({ cargando: false })
+      this.setState({ cargando: false });
     });
   }
 }

@@ -48,13 +48,13 @@ class ver_departamento extends Component {
               label={(
                 <span>
                   Activo&nbsp;
-              <Tooltip title="Si inactivas un departamento, sus usarios pertenecientes no podrán crear tickets.">
+                  <Tooltip title="Si inactivas un departamento, sus usarios pertenecientes no podrán crear tickets.">
                     <Icon type="question-circle-o" />
                   </Tooltip>
                 </span>
               )}
             >
-              <Switch loading={this.state.cargando} defaultChecked={this.state.departamento.estado === 1 ? true : false} onChange={(valor) => { this.cambiarEstadoDepartamento(valor) }} />
+              <Switch loading={this.state.cargando} defaultChecked={this.state.departamento.estado == 1 ? true : false} onChange={(valor) => { this.cambiarEstadoDepartamento(valor) }} />
             </FormItem>
           }
         </div>
@@ -63,9 +63,15 @@ class ver_departamento extends Component {
             onTabClick={(tab) => {
               this.setState({ tab: tab })
             }}>
-            <TabPane forceRender tab="Usuarios Asignados" key="1"><ModuloPuestos getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} /></TabPane>
-            <TabPane forceRender tab="Puestos" key="2"><PuestosDpto getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} /></TabPane>
-            <TabPane forceRender tab="Tickets Generadas" key="3"><TicketsGeneradas Server={this.props.Server} /></TabPane>
+            <TabPane forceRender tab="Usuarios Asignados" key="1">
+              <ModuloPuestos _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} />
+            </TabPane>
+            <TabPane forceRender tab="Puestos" key="2">
+              <PuestosDpto _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} />
+            </TabPane>
+            <TabPane forceRender tab="Tickets Generadas" key="3">
+              <TicketsGeneradas Server={this.props.Server} id_departamento={this.props.id_departamento} />
+            </TabPane>
           </Tabs>
         }
       </div>
@@ -81,6 +87,8 @@ class ver_departamento extends Component {
     var data = new FormData();
     data.append('id_departamento', this.props.id_departamento);
     data.append('estado', cambiar_a);
+    data.append('nombre_departamento', this.state.departamento.departamento);
+    data.append('_usuario', this.props._usuario);
 
     http._POST(Server + 'configuracion/departamento.php?accion=estado', data).then(res => {
       if (res !== 'error') {
@@ -183,9 +191,9 @@ class UsuariosAsignados extends Component {
                 }
                 return (
                   <div style={{ display: 'flex', flexDirection: 'row', height: '25px', justifyContent: 'center', alignItems: 'center' }}>
-                    <Popconfirm title="Borrar esta asignación?" onConfirm={() => { this.borrarAsignacion(param.value.id_cargo) }} onCancel={() => { }} okText="Sí" cancelText="Cancelar">
+                    {/*<Popconfirm title="Borrar esta asignación?" onConfirm={() => { this.borrarAsignacion(param.value.id_cargo) }} onCancel={() => { }} okText="Sí" cancelText="Cancelar">
                       <Icon type="delete" style={{ color: '#B3B6B7', fontSize: 16 }} />
-                    </Popconfirm>
+                    </Popconfirm>*/}
                     <Tooltip title={motivo} placement='right'>
                       <div>
                         <Switch size="small" disabled={!directo} defaultChecked={activo} onChange={(valor) => { this.cambiarEstadoAsignacion(param.value.id_cargo, valor) }} style={{ marginLeft: 10 }} />
@@ -214,6 +222,7 @@ class UsuariosAsignados extends Component {
     var data = new FormData();
     data.append('id_cargo', id_cargo);
     data.append('estado', cambiar_a);
+    data.append('_usuario', this.props._usuario);
 
     http._POST(Server + 'configuracion/departamento.php?accion=estado_asignacion', data).then(res => {
       if (res !== 'error') {
@@ -230,7 +239,7 @@ class UsuariosAsignados extends Component {
     });
   }
 
-  borrarAsignacion(id_asignacion) {
+  /*borrarAsignacion(id_asignacion) {
     let Server = String(this.props.Server);
     var data = new FormData();
     data.append('id_asignacion', id_asignacion);
@@ -248,7 +257,7 @@ class UsuariosAsignados extends Component {
       message.error("Ha ocurrido un error." + err);
       this.setState({ cargando: false });
     });
-  }
+  }*/
 
   handleSearch = (selectedKeys, confirm) => () => {
     confirm();
@@ -290,7 +299,7 @@ class UsuariosAsignados extends Component {
         </h2>
         </div>
         {(this.state.modal_Asignacion) &&
-          <Form_Asignacion getDepartamentos={this.props.getDepartamentos.bind(this)} closeModalAsignacion={this.closeModalAsignacion.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} id_usuario={this.state.id_usuario} />
+          <Form_Asignacion _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} closeModalAsignacion={this.closeModalAsignacion.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} id_usuario={this.state.id_usuario} />
         }
       </Rodal>
     )
@@ -377,7 +386,6 @@ class PuestosDpto extends Component {
 
   constructor(props) {
     super(props);
-
     this.state = {
       puestos_departamento: [],
     }
@@ -400,7 +408,7 @@ class PuestosDpto extends Component {
           <Grid columns='equal' colums={4} padded stackable >
             {this.state.puestos_departamento.map((puesto, i) => (
               <Grid.Column width={4} key={i}>
-                <ItemPuesto getDepartamentos={this.props.getDepartamentos.bind(this)} getPuestosDepartamento={this.getPuestosDepartamento.bind(this)} Server={this.props.Server} puesto={puesto.puesto} estado={puesto.estado_final} id_departamento={this.props.id_departamento} />
+                <ItemPuesto _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} getPuestosDepartamento={this.getPuestosDepartamento.bind(this)} Server={this.props.Server} puesto={puesto.puesto} estado={puesto.estado_final} id_departamento={this.props.id_departamento} />
               </Grid.Column>
             ))}
           </Grid>
@@ -441,13 +449,60 @@ class PuestosDpto extends Component {
 }
 
 class TicketsGeneradas extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tickets: []
+    };
+  }
+
+  componentDidMount() {
+    this.getTickets();
+  }
 
   render() {
+    const { tickets } = this.state;
     return (
-      <div>
-        soy tickets
+      <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }} >
+        {tickets.length > 0 ?
+          <div
+            className="ag-theme-balham"
+            style={{
+              height: '410px',
+              width: '100%',
+            }}
+          >
+            <AgGridReact
+              floatingFilter={true}
+              enableSorting={true}
+              animateRows={true}
+              enableColResize={true}
+              rowSelection='single'
+              onGridReady={(params) => { params.api.sizeColumnsToFit(); }}
+              rowData={tickets}>
+              <AgGridColumn headerName="Ticket" field={"nombre_ticket"} />
+              <AgGridColumn headerName="Usuario" field={"nombre_completo"} />
+              <AgGridColumn headerName="Estado" field={"estado"} />
+              <AgGridColumn headerName="Fecha" field="creacion" cellRenderer={(param) => { return moment(param).format('ll') }} />
+            </AgGridReact>
+          </div>
+          :
+          <div style={{ textAlign: 'center', padding: 10 }}>
+            <label>El departamento no a realizadon ningun ticket en el sistema.</label>
+          </div>
+        }
       </div>
     )
+  }
+
+  getTickets() {
+    const { id_departamento, Server } = this.props;
+    http._GET(Server + "configuracion/departamento.php?accion=get_tickets&id_departamento=" + id_departamento).then(res => {
+      this.setState({ tickets: res });
+    }).catch(err => {
+      message.error("Error al obtener asignaciones." + err);
+      this.setState({ cargando: false })
+    });
   }
 }
 
@@ -487,10 +542,10 @@ class ItemPuesto extends Component {
         {(!this.props.puesto.imagen) &&
           <div>
             {(this.props.estado.estado == 'Activo') &&
-              <img src={require('../media/puesto_activo.png')} style={{ width: '50%', height: '50%' }} />
+              <img src={require('../media/puesto_activo.png')} style={{ width: '50%' }} />
             }
             {(this.props.estado.estado == 'Inactivo') &&
-              <img src={require('../media/puesto_inactivo.png')} style={{ width: '50%', height: '50%' }} />
+              <img src={require('../media/puesto_inactivo.png')} style={{ width: '50%' }} />
             }
           </div>
         }
@@ -521,6 +576,8 @@ class ItemPuesto extends Component {
     data.append('id_departamento', this.props.id_departamento);
     data.append('id_puesto', this.props.puesto.id_puesto);
     data.append('estado', cambiar_a);
+    data.append('_usuario', this.props._usuario);
+    data.append('puesto', this.props.puesto.puesto);
 
     http._POST(Server + 'configuracion/departamento.php?accion=estado_puestos', data).then(res => {
       if (res !== 'error') {

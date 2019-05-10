@@ -4,10 +4,12 @@ import Ticket_Vista_All from "../vistas_ticket/vista_ticket_all";
 
 import Rodal from 'rodal';
 import { Grid } from 'semantic-ui-react';
-import { Progress, Icon, Form, message, Button } from 'antd';
+import { Progress, DatePicker , Icon, Form, message, Button , Input} from 'antd';
 import http from '../../services/http.services';
 
 var moment = require('moment');
+const Search = Input.Search;
+const {  MonthPicker } = DatePicker;
 
 class PestaniaTicketsUsuario extends Component {
   constructor() {
@@ -18,6 +20,8 @@ class PestaniaTicketsUsuario extends Component {
       modal_verTicket: false,
       tickets_abiertas_resultado: [],
       ticket_abierta: undefined,
+      texto_busqueda : '',
+      date: moment() 
     }
   }
 
@@ -29,20 +33,47 @@ class PestaniaTicketsUsuario extends Component {
     const { modalidad } = this.props;
     const { tickets_abiertas_resultado } = this.state;
     return (
-      <div style={{ display: 'flex', overflowY: 'auto', flex: 1, height: '100%', width: '100%', paddingLeft: '20px', paddingRight: '20px' }}>
+      <div  style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', width: '100%' }}>
         {this.modalAbrirTicket()}
         {this.modalVerTicket()}
+        <div style={{ display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
+          {(this.state.texto_busqueda !== undefined) &&
+            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', }}>
+              <Search
+                style={{ width: 300, height: 33, marginLeft: 100, }}
+                defaultValue={this.state.texto_busqueda}
+                placeholder="Buscar Ticket"
+                onSearch={value => this.bucarTicket(value)}
+                enterButton
+              />
+            </div>
+          }
+          {(this.props.modalidad == 'tickets_cerradas' || this.props.modalidad == 'tickets_cerradas_soporte') && 
+            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', }}>
+              <MonthPicker
+                id="datepicker"
+                style={{ width: '20%' }}
+                format="YYYY-MM"
+                value={ this.state.date }
+                onChange={(value) => {
+                  this.handleChangeDate(value);
+                }}
+              />
+            </div> 
+          }           
+        </div>
+
         <Grid container columns={3} padded stackable>
           {(modalidad === 'tickets_abiertas') &&
             <Grid.Column>
               <Button
                 type="dashed"
                 onClick={() => { this.solicito_abrirTicket() }}
-                style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '100%', height: '100px', alignItems: 'center', justifyContent: 'center' }}
+                style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '100%', height: '100px', alignItems: 'center', justifyContent: 'center' ,border: 'solid' ,  borderStyle: 'dashed'}}
               >
                 <Icon type="plus-circle" style={{ fontSize: 35, marginTop: 5 }} />
                 <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap', fontSize: 15, marginTop: 5 }}>
-                  Nuevo Ticket
+                  <b>Nuevo Ticket</b>
               </div>
               </Button>
             </Grid.Column>
@@ -55,6 +86,24 @@ class PestaniaTicketsUsuario extends Component {
         </Grid>
       </div>
     )
+  }
+
+  handleChangeDate(value) {
+    this.setState({ date : value});
+    this.getTicketsAbiertas(value);
+  }
+
+  bucarTicket(valor) {
+    if (valor !== "") {
+      let array = this.state.tickets_abiertas;
+      array = array.filter((elemento) => {
+        let nombre = elemento.nombre_ticket.toLowerCase();
+        return nombre.indexOf(valor.toLowerCase()) != -1;
+      });
+      this.setState({ tickets_abiertas_resultado: array });
+    } else {
+      this.setState({ tickets_abiertas_resultado: this.state.tickets_abiertas })
+    }
   }
 
   solicito_abrirTicket() {
@@ -80,7 +129,7 @@ class PestaniaTicketsUsuario extends Component {
         customStyles={{ borderRadius: 10, height: '90%', width: '90%' }}
       >
         {(modal_abrirTicket) &&
-          <div>
+          <div style={{ height: '100%', width: '100%' }}>
             {(tickets_usuario != []) &&
               <Abrir_Ticket Server={Server} tickets_usuario={tickets_usuario} id_usuario={id_usuario} cerrarModalTickets={this.cerrarModalTickets.bind(this)} />
             }
@@ -100,7 +149,7 @@ class PestaniaTicketsUsuario extends Component {
         onClose={() => { this.setState({ modal_verTicket: false }) }}
         closeMaskOnClick
         showCloseButton={true}
-        customStyles={{ borderRadius: 10, height: '67%', width: '50%' }}
+        customStyles={{ borderRadius: 10, height: '70%', width: '70%' }}
       >
         {(this.state.modal_verTicket) &&
           <div style={{ width: '100%', height: '100%' }}>
@@ -124,7 +173,7 @@ class PestaniaTicketsUsuario extends Component {
     this.getTicketsAbiertas();
   }
 
-  getTicketsAbiertas() {
+  getTicketsAbiertas(value = null) {
     const { Server, modalidad, fecha, id_usuario } = this.props;
     let server = String(Server);
     let accion = '';
@@ -141,6 +190,8 @@ class PestaniaTicketsUsuario extends Component {
     this.setState({ cargando: true });
     var data = new FormData();
     data.append('id_usuario', id_usuario);
+    var mes = (value != null) ? value : this.state.date;
+    data.append('mes' , mes.format('YYYY-MM-DD')); 
 
     if (fecha) {
       data.append('fecha', moment(fecha).format('YYYY-MM-DD'));
@@ -198,7 +249,7 @@ class ItemTicket extends Component {
 
         <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ display: 'flex', flex: 1, flexDirection: 'row', width: '30%', height: '100%', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-            <Icon type="tool" style={{ color: '#5DADE2', fontSize: 40, textAlign: 'center', padding: 5 }} />
+            <img src={require('../../media/ticket.png')} alt="actico" width="100px" />
           </div>
           <div style={{ width: '70%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
             <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap' }}>

@@ -9,7 +9,13 @@
 	header('Access-Control-Allow-Origin: *'); 
 
 	if($_GET[accion]=='get_notificaciones_usuario'){
-		$sql = mysqli_query($con, "SELECT * FROM notificacion WHERE id_usuario='$_POST[id_usuario]' ORDER BY creacion DESC");
+		$intNum = isset($_GET['num']) ? intval($_GET['num']) : 10;
+		$strQuery = "SELECT * 
+					 FROM notificacion 
+					 WHERE id_usuario='$_POST[id_usuario]' 
+					 ORDER BY creacion DESC
+					 LIMIT 10 OFFSET {$intNum}";
+		$sql = mysqli_query($con, $strQuery);
 		//Create an array with the results
 		$results=array();
 		while($v = mysqli_fetch_object($sql)){

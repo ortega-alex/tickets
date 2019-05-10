@@ -8,22 +8,23 @@ import http from '../services/http.services';
 const TabPane = Tabs.TabPane;
 var moment = require('moment');
 
-const id_usuario = '3';
+//const id_usuario = '3';
 
 class inicio extends Component {
 
   constructor() {
     super();
     this.state = {
-      notificaciones: undefined,
+      notificaciones: [],
       modal_PrevisualizarTicket: false,
       ticket_abierta: undefined,
       visible_notificaciones: false,
+      num : 10
     }
   }
 
   componentDidMount() {
-    this.getNotificaciones()
+    this.getNotificaciones(10);
   }
 
   render() {
@@ -32,7 +33,7 @@ class inicio extends Component {
         {this.modalPrevisualizarTicket()}
         <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
           <div style={{ display: 'flex', flex: 1, width: '30%', justifyContent: 'flex-end' }}>
-            {this.state.notificaciones !== undefined &&
+            {this.state.notificaciones.length > 0 &&
               <Dropdown overlay={this.renderNotificaciones()} placement='bottomRight'
                 onVisibleChange={this.handleVisibleChange}
                 visible={this.state.visible_notificaciones}
@@ -44,16 +45,16 @@ class inicio extends Component {
         </div>
         <Tabs defaultActiveKey={'1'} style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', }}>
           <TabPane forceRender key={1} tab={"Tickets Abiertos"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={id_usuario} modalidad='tickets_abiertas' />
+            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_abiertas' />
           </TabPane>
           <TabPane key={2} tab={"Tickets Cerradas"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={id_usuario} modalidad='tickets_cerradas' />
+            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_cerradas' />
           </TabPane>
           <TabPane key={3} tab={"Soporte - Tickets Abiertas"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={id_usuario} modalidad='tickets_abiertas_soporte' />
+            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_abiertas_soporte' />
           </TabPane>
           <TabPane key={4} tab={"Soporte - Tickets Cerradas"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={id_usuario} modalidad='tickets_cerradas_soporte' />
+            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_cerradas_soporte' />
           </TabPane>
         </Tabs>
       </div>
@@ -96,7 +97,9 @@ class inicio extends Component {
                 </Button>
               </Menu.Item>
             ))}
-
+            <Button inlineindent="24" onClick={this.handleCargarMas.bind(this)}  style={{ backgroundColor: 'transparent', border: 'none', outline: 'none', height: '100%', width: '100%' }}>
+              Cargar Más
+            </Button>
           </Menu>
         }
       </div>
@@ -121,23 +124,30 @@ class inicio extends Component {
 
   handleVisibleChange = (flag) => {
     this.setState({ visible_notificaciones: flag });
-    if (flag) {
+    /*if (flag) {
       this.getNotificaciones()
-    }
+    }*/
   }
 
-  getNotificaciones() {
+  handleCargarMas() {
+    var n = parseInt(this.state.num) + 10;
+    this.setState({num : n});
+    this.getNotificaciones(n);
+  }
+
+  getNotificaciones(n) {
     let Server = String(this.props.Server);
     this.setState({ cargando: true });
     var data = new FormData();
-    data.append('id_usuario', id_usuario);
+    data.append('id_usuario', this.props._usuario);
 
-    http._POST(Server + 'configuracion/notificaciones.php?accion=get_notificaciones_usuario', data).then((res) => {
+    http._POST(Server + 'configuracion/notificaciones.php?accion=get_notificaciones_usuario&num='+n, data).then((res) => {
       if (res !== 'error') {
-        this.setState({ notificaciones: undefined }, () => {
+        /*this.setState({ notificaciones: undefined }, () => {
           this.setState({ notificaciones: res });
-        });
-        this.setState({ cargando: false });
+        });*/
+        var noti = this.state.notificaciones.concat(res);
+        this.setState({ notificaciones: noti , cargando: false });
       } else {
         message.error("Error al cargar Notificaciones.");
         this.setState({ cargando: false })
@@ -254,7 +264,7 @@ class inicio extends Component {
     let Server = String(this.props.Server);
     var data = new FormData();
     data.append('id_usuario_ticket', id_usuario_ticket);
-    data.append('id_tecnico', id_usuario);
+    data.append('id_tecnico', this.props._usuario);
     data.append('modo', this.state.modo_previsualizar);
     http._POST(Server + 'configuracion/ticket.php?accion=tomar_ticket', data).then((res) => {
       if (res !== 'error') {
@@ -276,7 +286,7 @@ class inicio extends Component {
     let Server = String(this.props.Server);
     var data = new FormData();
     data.append('id_usuario_ticket', id_usuario_ticket);
-    data.append('id_tecnico', id_usuario);
+    data.append('id_tecnico', this.props._usuario);
     http._POST(Server + 'configuracion/ticket.php?accion=no_tomar_ticket' , data).then((res) => {
       if (res !== 'error') {
         this.setState({ modal_PrevisualizarTicket: false })

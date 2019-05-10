@@ -88,7 +88,6 @@ class tickets_asignacion extends Component {
   }
 
   onCheck = (checkedKeys, info) => {
-    console.log('onCheck', checkedKeys, info);
     let resultado = [];
     for (const objecto of checkedKeys) {
       if (!this.tiene_letras(objecto)) {
@@ -101,13 +100,15 @@ class tickets_asignacion extends Component {
   }
 
   guardarPerfilTicketsAsignacion() {
-    let Server = String(this.props.Server)
+    const { Server , _usuario , item , id_cargo , id_puesto} = this.props;
     this.setState({ cargando: true, cambios: false });
 
     var data = new FormData();
-    data.append('id_cargo', this.props.id_cargo);
-    data.append('id_puesto', this.props.id_puesto);
+    data.append('id_cargo', id_cargo);
+    data.append('id_puesto', id_puesto);
     data.append('perfil', JSON.stringify(this.state.tickets_seleccionadas));
+    data.append('_usuario' , _usuario);
+    data.append('item' , JSON.stringify(item));
 
     http._POST(Server + 'configuracion/usuario.php?accion=guardar_perfil_tickets_cargo', data).then(res => {
       if (res !== 'error') {

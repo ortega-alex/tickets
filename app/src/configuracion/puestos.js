@@ -7,7 +7,6 @@ import { Icon, Divider, Form, Input, Tooltip, message, Button, Switch } from 'an
 import http from '../services/http.services';
 
 const FormItem = Form.Item;
-var subiendo = false;
 
 class puestos extends Component {
 
@@ -40,13 +39,13 @@ class puestos extends Component {
             onClick={this.nuevoPuesto.bind(this)}
             style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
           >
-            <Icon type="plus-circle" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
+            <Icon type="plus-circle" style={{ color: '#3498DB', fontSize: 25, paddingRight: 20 }} />
           </button>
         </div>
         <div style={{ textAlign: 'center' }}>
           <h3>Puestos</h3>
           Selecciona un puesto para modificar su perfil.
-      </div>
+        </div>
         <div style={{ padding: '20px', marginTop: '15px' }}>
           <Grid columns='equal' colums={4} padded stackable >
             {this.state.puestos.map((puesto, i) => (
@@ -130,14 +129,14 @@ class puestos extends Component {
   }
 
   modalPuesto() {
-    const { Server } = this.props;
+    const { Server , _usuario } = this.props;
     const { puesto_edicion, modal_Puesto } = this.state;
     return (
       <Rodal
         animation={'slideUp'}
         visible={modal_Puesto}
         height={450}
-        width={750}
+        width={1000}
         onClose={() => { this.setState({ modal_Puesto: !modal_Puesto, puesto_edicion: undefined, frm_activo: true }) }}
         closeOnEsc closeMaskOnClick
         showCloseButton={true}
@@ -158,7 +157,7 @@ class puestos extends Component {
               </Button>
             </div>
             <div style={{ display: 'flex', flex: 1, }}>
-              <VerPuesto Server={Server} id_puesto={puesto_edicion.id_puesto} getPuestos={this.getPuestos.bind(this)} />
+              <VerPuesto _usuario={_usuario} Server={Server} id_puesto={puesto_edicion.id_puesto} getPuestos={this.getPuestos.bind(this)} />
             </div>
           </div>
         }
@@ -177,6 +176,7 @@ class puestos extends Component {
         var data = new FormData();
         data.append('nombre_puesto', values.nombre_puesto);
         data.append('estado', frm_activo ? '1' : '0');
+        data.append('_usuario' , this.props._usuario);
 
         if (!puesto_edicion) {
           http._POST(server + 'configuracion/puesto.php?accion=nuevo', data).then(res => {
@@ -229,7 +229,6 @@ class puestos extends Component {
             {
               id_puesto: objecto.id_puesto,
               puesto: objecto.puesto,
-              id_perfil_puesto_tickets: objecto.id_perfil_puesto_tickets,
               id_perfil_permisos: objecto.id_perfil_permisos,
               estado: objecto.estado,
               creacion: objecto.creacion,
@@ -248,22 +247,6 @@ class puestos extends Component {
       message.error("Error al cargar Departamentos." + err);
       this.setState({ cargando: false });
     });
-  }
-
-  onChange(info) {
-    if (info.file.status !== 'uploading') {
-      console.log(info.file, info.fileList);
-    } else {
-      subiendo = true;
-    }
-
-    if (info.file.status == 'done') {
-      subiendo = false
-      message.success(`${info.file.name} imagen adjuntada correctamente.`);
-    } else if (info.file.status == 'error') {
-      subiendo = false
-      message.error(`${info.file.name} error en subida.`);
-    }
   }
 
   beforeUpload(file) {

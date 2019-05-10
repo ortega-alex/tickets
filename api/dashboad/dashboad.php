@@ -35,9 +35,10 @@
         $intStado = isset($_GET["estado"]) ? intval($_GET["estado"]) : 0;
         $where = ($intStado != 2) ? "WHERE a.estado = {$intStado} " : ' ';
         $sQuery = "SELECT count(*) AS tickers ,
-                          IF (a.id_tecnico IS NULL , 'Sin Asignar' , b.nombre_completo ) AS usuario ,        
+                          IF (a.id_tecnico IS NULL , 'Sin Asignar' , b.username ) AS usuario ,        
                           (((sum(c.nivel_satisfaccion) / count(*)) * 100) / 5) as porcentaje ,
-                          a.id_tecnico AS tecnico
+                          a.id_tecnico AS tecnico ,
+                          a.estado 
                     FROM usuario_ticket a 
                     LEFT JOIN calificacion_ticket c on a.id_calificacion = c.id_calificacion 
                     LEFT JOIN usuario b ON a.id_tecnico = b.id_usuario 
@@ -50,6 +51,7 @@
         $arr = array();
         while($rTemp = mysqli_fetch_array($qTemp)) {
             $arr[$index]["tickers"] = $rTemp["tickers"];
+            $arr[$index]["estado"] = $rTemp["estado"];
             $arr[$index]["usuario"] = $rTemp["usuario"];
             $arr[$index]["porcentaje"] =  number_format(floatval($rTemp["porcentaje"]), 2, ".", ".");            
             $arr[$index]["tecnico"] =  $rTemp["tecnico"];
@@ -59,8 +61,12 @@
     }
 
     if (isset($_GET["detalle"])) {
-        $intTecnico = isset($_GET["tecnico"]) ? intval($_GET["tecnico"]) : null;
+        $intTecnico = isset($_POST["tecnico"]) ? intval($_POST["tecnico"]) : null;
+        $estado = isset($_POST["estado"]) ? intval($_POST["estado"]) : null;
+        $select = isset($_POST["select"]) ? intval($_POST["select"]) : null;
+
         $where = (empty($intTecnico)) ? " WHERE a.id_tecnico IS NULL " : " WHERE a.id_tecnico = {$intTecnico} ";
+        $and = ($select == 2) ? " " : "AND a.estado = {$estado}";
         
         $sQuery = "SELECT IF (a.estado = 0 , 'Abierto' , 'Cerrado') AS estado  , a.creacion as fecha , a.id_usuario_ticket ,
                           b.id_ticket , b.nombre_ticket as ticket , 
@@ -72,6 +78,7 @@
                    INNER JOIN departamento_puesto d ON a.id_usuario = d.id_usuario 
                    INNER JOIN departamento e ON d.id_departamento = e.id_departamento
                    {$where}
+                   {$and}
                    GROUP BY a.id_usuario_ticket
                    ORDER BY a.creacion DESC";
          

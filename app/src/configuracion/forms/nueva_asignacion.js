@@ -187,6 +187,7 @@ class nueva_asignacion extends Component {
         data.append('activo', estado);
         data.append('departamento', values.departamento);
         data.append('nuevo_actualizar_permisos', nuevo_actualizar_permisos);
+        data.append('_usuario' , this.props._usuario);
 
         http._POST(Server + 'configuracion/usuario.php?accion=asignar', data).then((res) => {
           if (res !== 'error') {
