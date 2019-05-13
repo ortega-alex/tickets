@@ -10,13 +10,10 @@ import 'react-infinite-calendar/styles.css';
 import 'rodal/lib/rodal.css';
 import 'ag-grid-community/dist/styles/ag-grid.css';
 import 'ag-grid-community/dist/styles/ag-theme-balham.css';
-
-import { initializeFirebase , askForPermissioToReceiveNotifications } from './push-notification';
+import 'toastr/build/toastr.css';
+import 'toastr/build/toastr.min';
 
 render(
     <App />,
     document.getElementById('root')
 );
-
-initializeFirebase();
-askForPermissioToReceiveNotifications();

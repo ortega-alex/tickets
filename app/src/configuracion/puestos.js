@@ -195,6 +195,7 @@ class puestos extends Component {
           });
         } else {
           data.append('id_puesto', puesto_edicion.id_puesto);
+          data.append('id_perfil_permisos', puesto_edicion.id_perfil_permisos);
           http._POST(Server + 'configuracion/puesto.php?accion=edit', data).then(res => {
             if (res !== 'error') {
               this.setState({ modal_nuevoPuesto: false });

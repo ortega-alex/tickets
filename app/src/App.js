@@ -19,10 +19,11 @@ import createHistory from 'history/createBrowserHistory';
 import { Menu, Icon, Tooltip, message, Button } from 'antd';
 
 import http from './services/http.services';
+import { initializeFirebase  } from './push-notification';
 
 const SubMenu = Menu.SubMenu;
 const history = createHistory();
-const Server = "http://localhost:8082/tickets/";
+const Server = "http://localhost:8080/tickets/";
 const imageUrl = require('../src/media/fondo.jpg');
 
 class App extends Component {
@@ -168,7 +169,8 @@ class App extends Component {
         this.setState({ 
           session_id: res ,
           _usuario: res["id_usuario"]
-        });
+        });      
+        initializeFirebase(res["id_usuario"] , Server );
       }
       this.setState({ cargando: false });
     }).catch(err => {

@@ -74,7 +74,7 @@ class abrir_ticket extends Component {
         </div>
         <div style={{display:'flex', flexDirection:'column',  width:'100%', borderRadius:15}}>
           {(this.state.tickets_usuario_resultado !== []) &&            
-              <Grid container columns={4} padded stackable style={{height:'100%' , overflowY:'auto'}}>
+              <Grid container columns={4} padded stackable style={{height:'100%' , overflowY:'auto'}}>            
               {this.state.tickets_usuario_resultado.map((ticket, i) => (
                 <Grid.Column key={i} >
                   <ItemTicket ticket={ticket} abrirTicket={this.abrirTicket.bind(this)} />

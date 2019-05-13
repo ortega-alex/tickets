@@ -226,6 +226,9 @@ class inicio extends Component {
                   <label>Aceptar Ticket</label>
                 }
               </Button>
+              <button class="js-push-button" disabled>
+                Enable Push Messages
+              </button>
               {(this.state.modo_previsualizar == 'solicitud') &&
                 <Button disabled={this.state.cargando} type="danger" onClick={() => { this.noTomarTicket(this.state.ticket_abierta.id_usuario_ticket) }} style={{ display: 'flex', marginLeft: 20, width: '20%', justifyContent: 'center', borderColor: 'transparent' }}>
                   No Aceptar
