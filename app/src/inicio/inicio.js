@@ -19,12 +19,12 @@ class inicio extends Component {
       modal_PrevisualizarTicket: false,
       ticket_abierta: undefined,
       visible_notificaciones: false,
-      num : 10
+      num : 0
     }
   }
 
   componentDidMount() {
-    this.getNotificaciones(10);
+    this.getNotificaciones(0);
   }
 
   render() {

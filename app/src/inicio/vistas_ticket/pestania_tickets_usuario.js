@@ -62,8 +62,8 @@ class PestaniaTicketsUsuario extends Component {
             </div> 
           }           
         </div>
-
-        <Grid container columns={3} padded stackable>
+        <div style={{height:'750px' , overflowY:'auto'}}>
+        <Grid container columns={3} padded stackable >
           {(modalidad === 'tickets_abiertas') &&
             <Grid.Column>
               <Button
@@ -79,11 +79,12 @@ class PestaniaTicketsUsuario extends Component {
             </Grid.Column>
           }
           {tickets_abiertas_resultado.map((ticket, i) => (
-            <Grid.Column key={i}>
+            <Grid.Column key={i} >
               <ItemTicket ticket={ticket} visualizarTicketAbierta={this.visualizarTicketAbierta.bind(this)} modalidad={modalidad} />
             </Grid.Column>
           ))}
         </Grid>
+        </div>
       </div>
     )
   }

@@ -376,11 +376,20 @@ class abrir_ticket extends Component {
         }        
 
         http._POST(Server + 'configuracion/ticket.php?accion=aperturar_ticket', data).then((res) => {
-          if (res !== 'error') {
+          if (res.err !== 'false') {            
             this.setState({ modal_Ticket: false });
             message.success("Tickdet Enviada correctamente.");
             this.setState({ cargando: false , files : FileList });
             this.props.cerrarModalTickets();
+            if ( res.emails.length > 0 ) {
+              var data = new FormData();
+              data.append('para', res.emails[0]);
+              data.append('mensaje', res.mensaje );
+              data.append('copia', JSON.stringify( res.emails));
+              http._POST(Server + 'mail.php?accion=set' , data).catch(err => {
+                console.log(err);
+              });
+            }
           } else {
             message.error("Ha ocurrido un error.");
             this.setState({ cargando: false });

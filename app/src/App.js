@@ -23,7 +23,7 @@ import { initializeFirebase  } from './push-notification';
 
 const SubMenu = Menu.SubMenu;
 const history = createHistory();
-const Server = "http://localhost:8080/tickets/";
+const Server = "http://localhost:8082/tickets/";
 const imageUrl = require('../src/media/fondo.jpg');
 
 class App extends Component {

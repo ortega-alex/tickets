@@ -17,6 +17,7 @@ export const initializeFirebase = (_usuario , Server ) => {
     const messaging = firebase.messaging();
 
     messaging.requestPermission().then(function () {
+        console.log("permisos");
         return messaging.getToken();
     }).then(function (token) {
         console.log(token);
