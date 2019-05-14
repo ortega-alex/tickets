@@ -825,7 +825,8 @@ if($_GET[accion]=='get_tickets_cerradas_soporte'){
 			$strQuery = "SELECT a.id_accion , a.accion ,
 								b.id_modulo , b.modulo
 						 FROM accion a 
-						 INNER JOIN modulo b ON a.id_modulo = b.id_modulo";
+						 INNER JOIN modulo b ON a.id_modulo = b.id_modulo
+						 ORDER BY a.id_modulo";
 			$qTpm = mysqli_query($con, $strQuery);
 			while ( $rTmp = mysqli_fetch_array($qTpm)) {
 				if ($modulo ==  $rTmp["modulo"]) {

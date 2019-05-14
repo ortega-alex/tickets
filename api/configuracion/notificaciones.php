@@ -9,10 +9,10 @@
 	header('Access-Control-Allow-Origin: *'); 
 
 	if($_GET[accion]=='get_notificaciones_usuario'){
-		$intNum = isset($_GET['num']) ? intval($_GET['num']) : 10;
+		$intNum = isset($_GET['num']) ? intval($_GET['num']) : 0;
 		$strQuery = "SELECT * 
 					 FROM notificacion 
-					 WHERE id_usuario='$_POST[id_usuario]' 
+					 WHERE id_usuario={$_POST[id_usuario]} 
 					 ORDER BY creacion DESC
 					 LIMIT 10 OFFSET {$intNum}";
 		$sql = mysqli_query($con, $strQuery);
@@ -34,6 +34,19 @@
 		echo json_encode($results);
 	}
 
-mysqli_close($con);
+	if($_GET[accion]=='set_tocken_web') {
+		
+		$intIdUsusario = isset($_POST['_usuario']) ? intval($_POST['_usuario']) : 0;
+		$strToken = isset($_POST['token']) ? trim($_POST['token']) : 0;
+		
+		if ( $intIdUsusario > 0 ) {
+			$strQuery = "UPDATE usuario 
+						 SET token_web = '{$strToken}' 
+						 WHERE id_usuario =  {$intIdUsusario}";
+			mysqli_query($con , $strQuery);
+		}
+		print("ok");
+	}
 
+	mysqli_close($con);
 ?>

@@ -8,7 +8,7 @@ mysqli_set_charset($con,"utf8");
 header('Content-Type: application/json');
 ini_set( "display_errors", 0); 
 header('Access-Control-Allow-Origin: *'); 
-include('../helper.php');
+include("../helper.php");
 
 if($_GET[accion]=='nueva_categoria'){
 
@@ -379,8 +379,7 @@ if($_GET[accion]=='get_tickets_all'){
 	echo json_encode($results);
 }
 
-if($_GET[accion]=='aperturar_ticket'){
-
+if ( $_GET[accion] == 'aperturar_ticket' ) {
 	$strQuery = "INSERT INTO usuario_ticket ( id_ticket, id_usuario, id_cargo, nivel_prioridad, 
 													 programada, fecha_programada, info_adicional) 
 							 VALUES( {$_POST[id_ticket]}, {$_POST[id_usuario]} , {$_POST[id_cargo]}, 
@@ -402,53 +401,79 @@ if($_GET[accion]=='aperturar_ticket'){
 			}
 		}
 		ticket_siguiente_fase($lastid,'',$con);
-	  notificar_nueva_ticket($lastid, $_POST[id_cargo], $con);
-	  echo json_encode($lastid);
+		notificar_nueva_ticket($lastid, $_POST[id_cargo], $con);	
+		//echo json_encode("ok");
 	} else {
-	  echo json_encode("error");
+		$arr['err'] = 'true';
+	  echo json_encode($arr);
 	}
 }
 
 function notificar_nueva_ticket($id_ticket, $id_cargo, $con){
 
-	$fecha= date("Y-m-d H:i:s");
+	$strQuery = "SELECT b.nombre_ticket , 
+											c.nombre_completo ,
+											e.departamento
+							FROM usuario_ticket a
+							INNER JOIN ticket b ON  a.id_ticket = b.id_ticket
+							INNER JOIN usuario c ON a.id_usuario = c.id_usuario
+							INNER JOIN departamento_puesto d ON c.id_usuario = d.id_usuario
+							INNER JOIN departamento e ON d.id_departamento = e.id_departamento
+							WHERE d.id_cargo = {$id_cargo}
+							AND a.id_usuario_ticket = {$id_ticket}";
+	$exe = mysqli_query($con, $strQuery );
+	$row = mysqli_fetch_assoc($exe);
+	$datos["nombre_completo"] = $row['nombre_completo'];
+	$datos["departamento"] = $row['departamento'];
+	$datos["nombre_ticket"] = $row['nombre_ticket'];
 
+	$mensaje = $datos["nombre_ticket"]." - Por: ".$datos["nombre_completo"]." del Dpto. de ".$datos["departamento"].".";
 
-	$sql = mysqli_query($con, "SELECT dp.id_usuario FROM tickets_soporte ts, departamento_puesto dp, departamento d WHERE ts.id_cargo=dp.id_cargo AND dp.id_departamento=d.id_departamento AND ts.id_ticket=(SELECT id_ticket FROM usuario_ticket WHERE id_usuario_ticket=$id_ticket) AND d.id_departamento=(SELECT d.id_departamento FROM departamento_puesto dp, departamento d WHERE dp.id_departamento=d.id_departamento AND dp.id_cargo=$id_cargo LIMIT 1) ");
-
-	//datos creador
-	 $exe = mysqli_query($con, "SELECT us.username, us.email, us.nombre_completo, p.puesto, d.departamento, t.nombre_ticket FROM usuario_ticket ut, usuario us, departamento_puesto dp, puesto p, departamento d, ticket t WHERE ut.id_usuario=us.id_usuario AND us.estado=1 AND ut.id_ticket=t.id_ticket AND us.id_usuario=dp.id_usuario AND dp.id_puesto=p.id_puesto AND dp.id_departamento=d.id_departamento AND dp.id_cargo=$id_cargo GROUP BY ut.id_usuario_ticket LIMIT 1");
-	 $row = mysqli_fetch_assoc($exe);
-	 $datos["username"] = $row['username'];
-	 $datos["email"] = $row['email'];
-	 $datos["nombre_completo"] = $row['nombre_completo'];
-	 $datos["puesto"] = $row['puesto'];
-	 $datos["departamento"] = $row['departamento'];
-	 $datos["nombre_ticket"] = $row['nombre_ticket'];
-
-	 $mensaje=$datos["nombre_ticket"]." - Por: ".$datos["nombre_completo"]." del Dpto. de ".$datos["departamento"].".";
-
-
-	while($v = mysqli_fetch_object($sql)){
-
-		mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) VALUES($v->id_usuario, 'Nueva Ticket en tu Dpto.', '$mensaje', '$fecha', 'ver_ticket_aceptar', '$id_ticket', 1)" );
-
-	}
-
-
-
-	$sql_global= mysqli_query($con, "SELECT us.id_usuario, us.nombre_completo FROM tickets_soporte_global tsg, usuario us WHERE tsg.id_usuario=us.id_usuario AND us.estado=1 AND tsg.id_ticket=(SELECT id_ticket FROM usuario_ticket WHERE id_usuario_ticket='$id_ticket') GROUP BY id_usuario ");
-
-	while($r_global = mysqli_fetch_object($sql_global)) {
-	    mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) VALUES($r_global->id_usuario, 'Nueva Ticket - Como Soporte Global', '$mensaje', '$fecha', 'ver_ticket_aceptar', '$id_ticket', 1)" );
-	}
-
-	//echo json_encode("Ok");
-
-
+	$strQuery = "SELECT dp.id_usuario , u.email , u.token_web
+							 FROM tickets_soporte ts, departamento_puesto dp, departamento d , usuario u
+							 WHERE ts.id_cargo = dp.id_cargo 
+							 AND dp.id_departamento = d.id_departamento 
+							 AND dp.id_usuario = u.id_usuario
+							 AND ts.id_ticket = ( SELECT id_ticket 
+							 											FROM usuario_ticket 
+																		WHERE id_usuario_ticket = {$id_ticket}) 
+							 AND d.id_departamento = ( SELECT d.id_departamento 
+							  												 FROM departamento_puesto dp, departamento d 
+																				 WHERE dp.id_departamento = d.id_departamento 
+																				 AND dp.id_cargo = {$id_cargo} LIMIT 1) 
+																				 
+							UNION
+							
+							SELECT us.id_usuario, us.email , us.token_web 
+							FROM tickets_soporte_global tsg, usuario us 
+							WHERE tsg.id_usuario = us.id_usuario 
+							AND us.estado = 1 
+							AND tsg.id_ticket = ( SELECT id_ticket 
+																	  FROM usuario_ticket 
+							  										WHERE id_usuario_ticket = {$id_ticket} ) 
+							GROUP BY id_usuario";
+	$qTmp = mysqli_query($con, $strQuery );
+	$index = 0;
+	$emails = array();
+	while ( $v = mysqli_fetch_object($qTmp) ) {
+		if ( !empty($v->token_web) ) {
+			sendNotificacionFirebase("Nuevo Ticket" , $mensaje , $v->token_web);
+		}		
+		$emails[$index] = $v->email;
+		$index++;
+		$strQuery = "INSERT INTO notificacion(id_usuario, titulo, descripcion, accion, accion_key, estado) 
+								 VALUES($v->id_usuario, 'Nueva Ticket en tu Dpto.', '$mensaje' , 'ver_ticket_aceptar', '$id_ticket', 1)";
+		//mysqli_query($con, $strQuery);
+	}	
+	
+	if ( is_array($emails) &&  sizeof($emails) > 0 ) {
+		$arr['emails'] = $emails;
+		$arr['mensaje'] = $mensaje;
+		$arr['error'] = 'false'; 
+		print(json_encode($arr));	
+		//enviarCoreoElectronico($emails[0] , $mensaje , $emails);
+	} 
 }
-
-
 
 if($_GET[accion]=='get_previsualizar_ticket'){
 
@@ -762,23 +787,43 @@ if($_GET[accion]=='get_soporte_compatible'){
 
 if($_GET[accion]=='enviar_ticket_transferida'){
 
-	$fecha= date("Y-m-d H:i:s");
-
 	//datos tecnico
-	$exe = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario='$_POST[id_tecnico]' ");
+	$strQuery = "SELECT nombre_completob
+							 FROM usuario 
+							 WHERE id_usuario='$_POST[id_tecnico]' ";
+	$exe = mysqli_query($con , $strQuery );
  	$row = mysqli_fetch_assoc($exe);
  	$nombre_tecnico = $row['nombre_completo'];
 
  	$titulo= $nombre_tecnico." te ha transferido una ticket";
- 	$mensaje= "Por algún motivo ".$nombre_tecnico." no ha podido continuar con esta ticket, podrías darle continuidad?";
+ 	$mensaje= "Nueva asignación de tickte. Podrías darle continuidad?";
+ 
+	 //enviamos notificacion
+	$strQuery = "INSERT INTO notificacion(id_usuario, titulo, descripcion, accion, accion_key, estado) 
+						   VALUES('$_POST[id_usuario]', '$titulo', '$mensaje', 'ver_ticket_aceptar_transferida', '$_POST[id_usuario_ticket]', 1)";
+	$sqls = mysqli_query($con, $strQuery );
 
- 	//enviamos notificacion
-	$sqls = mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
-															VALUES('$_POST[id_usuario]', '$titulo', '$mensaje', '$fecha', 'ver_ticket_aceptar_transferida', 
-																			'$_POST[id_usuario_ticket]', 1)" );
+	$strQuery = "SELECT email , token_web 
+							 FROM usuario 
+							 WHERE id_usuario = {$_POST[id_usuario]}";
+	$qTmp = mysqli_query($con , $strQuery);
+	$rTmp = mysqli_fetch_assoc($qTmp);
+
+	if ( !empty($rTmp['token_web'] ) ) {
+		sendNotificacionFirebase($titulo , $mensaje , $rTmp['token_web']);
+	}
+
+	if ( !empty($rTmp['email'] ) ) {
+		//enviarCoreoElectronico($rTmp['email'] , $mensaje , []);
+		$arr["email"] =  $rTmp['email'];
+		$arr["mensaje"] =  $mensaje;
+	}
+	
 	if($sqls){
-	  echo json_encode("Ok");
+		$arr['err'] = 'false';
+	  echo json_encode($arr);
 	}else{
+		$arr['err'] = 'true';
 	  echo json_encode("error");
 	}	
 }
