@@ -23,7 +23,7 @@ import { initializeFirebase  } from './push-notification';
 
 const SubMenu = Menu.SubMenu;
 const history = createHistory();
-const Server = "http://localhost:8082/tickets/";
+const Server = "http://172.29.9.186:8082/tickets/";
 const imageUrl = require('../src/media/fondo.jpg');
 
 class App extends Component {
@@ -33,7 +33,11 @@ class App extends Component {
       showMenu: false,
       pathname: '',
       session_id: undefined,
-      _usuario: undefined
+      _usuario: undefined ,
+      accesos : {} ,
+      modulos : {} ,
+      departamentos: [] ,
+      rol: null
     }
   }
 
@@ -47,7 +51,7 @@ class App extends Component {
 
   render() {
 
-    const { session_id, pathname, cargando , _usuario } = this.state;
+    const { session_id, pathname, cargando , _usuario  , accesos , modulos , departamentos , rol } = this.state;
     return (
       <Router history={history}>
         <div style={{ display: "flex", width: "100%", height: "100vh" }} >
@@ -71,9 +75,18 @@ class App extends Component {
                       </div>
                     </div>
                   </Menu.Item>
-                  <Menu.Item key="/"><Link to="" onClick={() => { this.setState({ pathname: "/" }) }}><Icon type="dashboard" />Indicadores</Link></Menu.Item>
-                  <Menu.Item key="/inicio"><Link to="/inicio" onClick={() => { this.setState({ pathname: "/inicio" }) }}><Icon type="home" />Inicio</Link></Menu.Item>
-                  <Menu.Item key="/calendario"><Link to="/calendario" onClick={() => { this.setState({ pathname: "/calendario" }) }}><Icon type="calendar" />Calendario</Link></Menu.Item>
+                  {
+                    modulos['Indicadores'] && 
+                    <Menu.Item key="/"><Link to="" onClick={() => { this.setState({ pathname: "/" }) }}><Icon type="dashboard" />Indicadores</Link></Menu.Item>
+                  }
+                  {
+                    modulos['Inicio'] && 
+                    <Menu.Item key="/inicio"><Link to="/inicio" onClick={() => { this.setState({ pathname: "/inicio" }) }}><Icon type="home" />Inicio</Link></Menu.Item>
+                  }
+                  {
+                    modulos['Calendario'] && 
+                    <Menu.Item key="/calendario"><Link to="/calendario" onClick={() => { this.setState({ pathname: "/calendario" }) }}><Icon type="calendar" />Calendario</Link></Menu.Item>
+                  }
                   <SubMenu key="5" title={<span><Icon type="setting" /><span>Configuración</span></span>}>
                     <Menu.Item key="/configuracion/usuarios">
                       <Link to="/configuracion/usuarios" onClick={() => { this.setState({ pathname: "/configuracion/usuarios" }) }}>
@@ -101,10 +114,10 @@ class App extends Component {
               <div style={{ display: 'flex', flex: 1, width: "80%", height: "100%" }}>
 
                 {pathname == '/' &&
-                  <DashboadView Server={Server} _usuario={_usuario} />
+                  <DashboadView Server={Server} _usuario={_usuario} accesos={accesos} departamentos={departamentos}  rol={rol}  />
                 }
 
-                <Route path="/inicio" render={() => <InicioView Server={Server} _usuario={_usuario} />} />
+                <Route path="/inicio" render={() => <InicioView Server={Server} _usuario={_usuario}/>} />
                 <Route path="/configuracion/departamentos" render={() => <DepartamentosView Server={Server} _usuario={_usuario} />} />
                 <Route path="/configuracion/puestos" render={() => <PuestosView Server={Server} _usuario={_usuario} />} />
                 <Route path="/configuracion/tickets" render={() => <TicketsView Server={Server} _usuario={_usuario} />} />
@@ -148,7 +161,11 @@ class App extends Component {
     AsyncStorage.setItem("session_id", responseJson["session_id"]);
     this.setState({ 
       session_id:  responseJson["session_id"] ,
-      _usuario: responseJson["id_usuario"]
+      _usuario: responseJson["id_usuario"] ,
+      accesos : responseJson['accesos'] ,
+      modulos : responseJson['modulos'] ,
+      departamentos : responseJson['departamentos'] ,
+      rol : responseJson['id_rol'] 
     });
   }
 
@@ -168,7 +185,11 @@ class App extends Component {
       } else if (res) {
         this.setState({ 
           session_id: res ,
-          _usuario: res["id_usuario"]
+          _usuario: res["id_usuario"] ,
+          accesos : res['accesos'] ,
+          modulos : res['modulos'] ,
+          departamentos : res['departamentos'] ,
+          rol : res['id_rol'] 
         });      
         initializeFirebase(res["id_usuario"] , Server );
       }

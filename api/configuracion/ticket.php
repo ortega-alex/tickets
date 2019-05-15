@@ -463,7 +463,7 @@ function notificar_nueva_ticket($id_ticket, $id_cargo, $con){
 		$index++;
 		$strQuery = "INSERT INTO notificacion(id_usuario, titulo, descripcion, accion, accion_key, estado) 
 								 VALUES($v->id_usuario, 'Nueva Ticket en tu Dpto.', '$mensaje' , 'ver_ticket_aceptar', '$id_ticket', 1)";
-		//mysqli_query($con, $strQuery);
+		mysqli_query($con, $strQuery);
 	}	
 	
 	if ( is_array($emails) &&  sizeof($emails) > 0 ) {
@@ -471,7 +471,6 @@ function notificar_nueva_ticket($id_ticket, $id_cargo, $con){
 		$arr['mensaje'] = $mensaje;
 		$arr['error'] = 'false'; 
 		print(json_encode($arr));	
-		//enviarCoreoElectronico($emails[0] , $mensaje , $emails);
 	} 
 }
 
@@ -595,10 +594,9 @@ if($_GET[accion]=='tomar_ticket'){
 	mysqli_query($con, "DELETE FROM notificacion 
 											WHERE accion_key='$_POST[id_usuario_ticket]' 
 											AND accion='ver_ticket_aceptar'" );
-	echo json_encode("Ok");
 }
 
-function ticket_siguiente_fase($id_usuario_ticket, $id_tecnico, $con) {
+function ticket_siguiente_fase ( $id_usuario_ticket , $id_tecnico, $con ) {
 
 	$fecha= date("Y-m-d H:i:s");
 	$exe = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW 
@@ -608,10 +606,10 @@ function ticket_siguiente_fase($id_usuario_ticket, $id_tecnico, $con) {
 	$fases = $row['NUMBER_ROW'];
 
 	if ( intval($fases) == 0 ) {
-	 	mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio) 
-		 										VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT 1), 0, '$fecha')" );
+	 	mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio ) 
+		 										VALUES({$id_usuario_ticket}, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT 1), 0, '{$fecha}' )" );
 	} else {
-	 	$fase_siguiente=intval($fases) + 1;
+	 	$fase_siguiente = intval($fases) + 1;
 	 	//total fases
 	 	$exeb = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM fase WHERE estado=1");
 		$rowb = mysqli_fetch_assoc($exeb);
@@ -667,6 +665,10 @@ function ticket_siguiente_fase($id_usuario_ticket, $id_tecnico, $con) {
 														VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT $limitar, 1), 0, '$fecha', $id_tecnico)" );
 				$mensaje=$nombre_tecnico." ha tomado tu ticket, muy pronto le estará dando solución!";
 			}
+
+			mysqli_query($con, "UPDATE usuario_ticket 
+													SET id_tecnico=$id_tecnico 
+													WHERE id_usuario_ticket=$id_usuario_ticket");
 		} else {
 			//damos por finalizada ticket
 			mysqli_query($con, "UPDATE usuario_ticket 
@@ -677,7 +679,36 @@ function ticket_siguiente_fase($id_usuario_ticket, $id_tecnico, $con) {
 		//enviamos notificacion
 		mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
 												VALUES((SELECT id_usuario FROM usuario_ticket WHERE id_usuario_ticket=$id_usuario_ticket), 'Ticket Actualizada!', '$mensaje', '$fecha', 'ver_ticket', '$id_usuario_ticket', 1)" );
-  }
+		$strQuery = "SELECT b.id_departamento , b.id_puesto ,
+											c.email , c.token_web
+								 FROM usuario_ticket a 
+								 INNER JOIN departamento_puesto b ON a.id_cargo = b.id_cargo
+								 INNER JOIN usuario c ON a.id_usuario = c.id_usuario
+								 WHERE a.id_usuario_ticket = {$id_usuario_ticket}";
+
+		$qTmp = mysqli_query($con , $strQuery);
+		$rTmp = mysqli_fetch_assoc($qTmp);		
+		if ( !empty($rTmp['token_web']) ) {
+			sendNotificacionFirebase("Nuevo estado de Ticket" , $mensaje , $rTmp['token_web']);
+		}
+
+		$arr["para"] =  $rTmp['email'];
+		$arr["mensaje"] =  $mensaje;
+		if ( $rTmp['id_puesto'] != 3 ) {
+			$strQuery = "SELECT b.email
+										FROM departamento_puesto a
+										INNER JOIN usuario b ON a.id_usuario = b.id_usuario
+										WHERE a.id_puesto = 3
+										AND a.id_departamento = {$rTmp->id_departamento}";
+			$qTmp = mysqli_query($con , $strQuery);
+			$index = 0;
+			while ( $rTmp = mysqli_fetch_array($qTmp) ) {
+				$arr["copia"][$index] = $rTmp['email'];
+				$index++;
+			}		
+		}		
+		print(json_encode($arr));
+	}
 }
 
 
@@ -721,13 +752,9 @@ if($_GET[accion]=='put_mensaje'){
 }
 
 
-if($_GET[accion]=='siguiente_fase'){
-
-
+if( $_GET[accion] == 'siguiente_fase' ) {
 	ticket_siguiente_fase($_POST[id_usuario_ticket], $_POST[id_usuario], $con);
-
-	echo json_encode("Ok");
-
+	//echo json_encode("Ok");
 }
 
 
@@ -785,8 +812,7 @@ if($_GET[accion]=='get_soporte_compatible'){
 }
 
 
-if($_GET[accion]=='enviar_ticket_transferida'){
-
+if ( $_GET[accion] == 'enviar_ticket_transferida') {
 	//datos tecnico
 	$strQuery = "SELECT nombre_completob
 							 FROM usuario 
@@ -814,16 +840,21 @@ if($_GET[accion]=='enviar_ticket_transferida'){
 	}
 
 	if ( !empty($rTmp['email'] ) ) {
-		//enviarCoreoElectronico($rTmp['email'] , $mensaje , []);
-		$arr["email"] =  $rTmp['email'];
+		$arr["para"] =  $rTmp['email'];
 		$arr["mensaje"] =  $mensaje;
+
+		curl_setopt($ch, CURLOPT_URL,"../mail.php?accion=set");
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS,  $arr); 
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+		$server_output = curl_exec ($ch);
+		curl_close ($ch);
 	}
 	
 	if($sqls){
-		$arr['err'] = 'false';
-	  echo json_encode($arr);
+	  echo json_encode("ok");
 	}else{
-		$arr['err'] = 'true';
 	  echo json_encode("error");
 	}	
 }
@@ -833,7 +864,7 @@ if($_GET[accion]=='no_tomar_ticket'){
 	$fecha= date("Y-m-d H:i:s");
 
 	//datos tecnico
-	$exe = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario='$_POST[id_tecnico]' ");
+	$exe = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario={$_POST[id_tecnico]} ");
  	$row = mysqli_fetch_assoc($exe);
  	$nombre_tecnico = $row['nombre_completo'];
 

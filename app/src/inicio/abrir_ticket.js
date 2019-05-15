@@ -17,8 +17,8 @@ const Search = Input.Search;
 
 class abrir_ticket extends Component {
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       tickets_usuario: [],
       tickets_usuario_resultado: [],
@@ -36,6 +36,8 @@ class abrir_ticket extends Component {
       cambiar_valores: false,
       files: FileList
     }
+    
+    console.log(this.props);
   }
 
   componentWillMount() {
@@ -386,9 +388,7 @@ class abrir_ticket extends Component {
               data.append('para', res.emails[0]);
               data.append('mensaje', res.mensaje );
               data.append('copia', JSON.stringify( res.emails));
-              http._POST(Server + 'mail.php?accion=set' , data).catch(err => {
-                console.log(err);
-              });
+              http._POST(Server + 'mail.php?accion=set' , data).catch(err => console.log(err));
             }
           } else {
             message.error("Ha ocurrido un error.");

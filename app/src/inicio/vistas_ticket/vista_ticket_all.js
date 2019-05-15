@@ -272,13 +272,9 @@ class ver_ticket_abierta extends Component {
     this.setState({ cargando: true });
 
     http._POST(Server + 'configuracion/ticket.php?accion=enviar_ticket_transferida', data).then((res) => {
-      if (res.err == 'false') {
+      if (res == 'ok') {
         message.info("Se ha enviado la solicitud de transferencia.");
         this.setState({ modal_transferirTicket: false, id_usuario_transferir: undefined , cargando: false });
-        var data = new FormData();
-        data.append('para', res.email);
-        data.append('mensaje', res.mensaje);
-        http._POST(Server + "mail.php?accion=set" , data).catch(err => console.log(err));
       } else {
         message.error("Error al cargar Soporte Compatible.");
         this.setState({ cargando: false });
@@ -300,7 +296,15 @@ class ver_ticket_abierta extends Component {
       if (res !== 'error') {
         this.setState({ cargando: false });
         this.props.getTicketsAbiertas();
-        this.cargarTicket(this.state.ticket.id_usuario_ticket)
+        this.cargarTicket(this.state.ticket.id_usuario_ticket);
+
+        var data = new FormData();
+        data.append('para', res.para);
+        data.append('mensaje', res.mensaje);
+        if (res.copia) {
+          data.append('copia', res.copia);
+        }
+        http._POST(Server + "mail.php?accion=set" , data).catch(err => console.log(err));
       } else {
         message.error("Error al cambiar de fase.");
         this.setState({ cargando: false })

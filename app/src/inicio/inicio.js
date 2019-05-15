@@ -226,9 +226,9 @@ class inicio extends Component {
                   <label>Aceptar Ticket</label>
                 }
               </Button>
-              <button class="js-push-button" disabled>
+              {/*<button class="js-push-button" disabled>
                 Enable Push Messages
-              </button>
+              </button>*/}
               {(this.state.modo_previsualizar == 'solicitud') &&
                 <Button disabled={this.state.cargando} type="danger" onClick={() => { this.noTomarTicket(this.state.ticket_abierta.id_usuario_ticket) }} style={{ display: 'flex', marginLeft: 20, width: '20%', justifyContent: 'center', borderColor: 'transparent' }}>
                   No Aceptar
@@ -274,6 +274,14 @@ class inicio extends Component {
         this.setState({ modal_PrevisualizarTicket: false });
         message.success("Se te ha asignado esta ticket!");
         this.setState({ cargando: false });
+
+        var data = new FormData();
+        data.append('para', res.para);
+        data.append('mensaje', res.mensaje);
+        if (res.copia) {
+          data.append('copia', res.copia);
+        }
+        http._POST(Server + "mail.php?accion=set" , data).catch(err => console.log(err));
       } else {
         message.error("Ha ocurrido un error.");
         this.setState({ cargando: false });

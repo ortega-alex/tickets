@@ -12,8 +12,8 @@ const Search = Input.Search;
 const {  MonthPicker } = DatePicker;
 
 class PestaniaTicketsUsuario extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       tickets_abiertas: [],
       modal_abrirTicket: false,
@@ -23,6 +23,7 @@ class PestaniaTicketsUsuario extends Component {
       texto_busqueda : '',
       date: moment() 
     }
+    console.log(this.props);
   }
 
   componentDidMount() {

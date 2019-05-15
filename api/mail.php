@@ -10,8 +10,9 @@
         $strMensaje = isset($_POST['mensaje']) ? trim($_POST['mensaje']) : null;
         $arrCopia = isset($_POST['copia']) ?  json_decode($_POST['copia'] , true) : [];
 
-        if ( !empty($strPara) && !empty($strMensaje) && sizeof($arrCopia) > 0  ) {
+        if ( !empty($strPara) && !empty($strMensaje) ) {
             enviarCoreoElectronico($strPara , $strMensaje , $arrCopia);	
+            print("ok");
         } else {
             print("err");
         } 

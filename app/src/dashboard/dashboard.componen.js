@@ -6,12 +6,12 @@ import http from '../services/http.services';
 import { Grid } from 'semantic-ui-react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { AgGridReact, AgGridColumn } from 'ag-grid-react';
-import { Icon, Button, message } from 'antd';
+import { Icon, Button, message, Form, Select } from 'antd';
 import Rodal from 'rodal';
-
 import './dashboard.component.css';
 
-//var moment = require('moment');
+const FormItem = Form.Item;
+const Option = Select.Option;
 
 class Dashboad extends Component {
 
@@ -28,30 +28,154 @@ class Dashboad extends Component {
                 index: ''
             },
             detalle: [],
-            id_usuario_ticket: null
+            id_usuario_ticket: null,
+            id_departamento : null
         }
         this.handleSelect = this.handleSelect.bind(this);
         this.handleModal = this.handleModal.bind(this);
+        console.log(this.props);
     }
 
     componentDidMount() {
-        this.getIndicadores();
-        this.getEstadistica(0);
+        console.log("props" , this.props);
+        this.getIndicadores(this.props.departamentos[0].id_departamento);
+        this.getEstadistica( 0 , this.props.departamentos[0].id_departamento);
     }
 
-    getIndicadores() {
-        const { Server } = this.props;
-        http._GET(String(Server) + 'dashboad/dashboad.php?get=true').then((res) => {
-            this.setState({ indicadores: res });
+    render() {
+        const { select, color, data, indicadores  } = this.state;
+        const { accesos, _usuario , departamentos , rol } = this.props;
+        return (
+            <div className="content-dashboard">
+                {this.modalUsuario()}
+                {this.modalVerTicket()}
+                <div>
+                    <Grid className="grid" container columns={3} padded stackable>
+                        {
+                            accesos['tictets_abiertos'] &&
+                            <Grid.Column >
+                                <div className="grid-colum"
+                                    style={{ background: (select == 0) ? color[select] : '' }}
+                                    onClick={this.handleSelect(0)}
+                                >
+                                    <div className="icon">
+                                        <Icon type="unlock" style={{ color: (select == 0) ? 'white' : '' }} />
+                                    </div>
+                                    <div className="text">
+                                        Tickets Abiertos
+                                        <p id="number" style={{ color: (select == 0) ? 'white' : '' }}>
+                                            {  (indicadores["abiertos"]) ? indicadores["abiertos"] : 0  }
+                                        </p>
+                                    </div>
+                                </div>
+                            </Grid.Column>
+                        }
+                        {
+                            accesos['tictets_cerrador'] &&
+                            <Grid.Column >
+                                <div className="grid-colum"
+                                    style={{ background: (select == 1) ? color[select] : '' }}
+                                    onClick={this.handleSelect(1)}
+                                >
+                                    <div className="icon">
+                                        <Icon type="lock" style={{ color: (select == 1) ? 'white' : '' }} />
+                                    </div>
+                                    <div className="text">
+                                        Tickets Cerrados
+                                        <p id="number" style={{ color: (select == 1) ? 'white' : '' }}>
+                                            { (indicadores["cerrados"]) ? indicadores["cerrados"] : 0  }
+                                        </p>
+                                    </div>
+                                </div>
+                            </Grid.Column>
+                        }
+                        {
+                            accesos['satisfaccion'] &&
+                            <Grid.Column >
+                                <div className="grid-colum"
+                                    id={2}
+                                    style={{ background: (select == 2) ? color[select] : '' }}
+                                    onClick={this.handleSelect(2)}
+                                >
+                                    <div className="icon">
+                                        <Icon type="pie-chart" style={{ color: (select == 2) ? 'white' : '' }} />
+                                    </div>
+                                    <div className="text">
+                                        Satisfacción
+                                        <p id="number" style={{ color: (select == 2) ? 'white' : '' }}>
+                                            { (indicadores["satisfaccion"]) ? indicadores["satisfaccion"] : 0  } %
+                                        </p>
+                                    </div>
+                                </div>
+                            </Grid.Column>
+                        }
+                    </Grid>
+                </div>
+                <div className="stadistic">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={data}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            onClick={this.handleModal}                        >
+                            <XAxis dataKey="usuario" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey={select != 2 ? 'tickers' : 'porcentaje'} fill={color[select]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                { rol != 1 && 
+                    <div style={{ display: 'flex', flexDirection: 'row', height: '50%', width: '100%' , alignItems : 'center'}}>
+                        <FormItem style={{ width: '25%', paddingLeft: '10%' }}>
+                            <Select
+                                showSearch
+                                autoClearSearchValue
+                                placeholder="Selecciona Departamento"
+                                optionFilterProp="children"
+                                defaultValue={( departamentos.length > 0 ? departamentos[0]['departamento'] : null)}
+                                onChange={(seleccion) => { this.setState({id_departamento : seleccion })  ; this.getIndicadores(seleccion) ; this.getEstadistica(0 , seleccion) ; }}
+                                style={{ width: '80%' }}
+                                filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                            >
+                                {
+                                    departamentos.map((departamento , i) => (
+                                        <Option key={i} value={departamento.id_departamento}>{departamento.departamento}</Option>
+                                    ))
+                                }
+                            </Select>
+                        </FormItem>
+                    </div>
+                }                
+            </div>
+        )
+    }
+
+    getIndicadores(id_departamento) {
+        const { Server, _usuario , rol } = this.props;
+        var data = new FormData();
+        data.append('id_usuario', _usuario);
+        data.append('id_departamento', id_departamento);
+        data.append('rol', rol);
+
+        http._POST(String(Server) + 'dashboad/dashboad.php?get' , data ).then((res) => {
+            this.setState({ id_departamento : id_departamento , indicadores: res });
         }).catch(err => {
             message.error("Error al cargar informacion." + err);
         });
     }
 
-    getEstadistica(estado) {
-        const { Server } = this.props;
-        http._GET(String(Server) + 'dashboad/dashboad.php?grafica=true&estado=' + estado).then((res) => {
+    getEstadistica(estado , id_departamento = null) {
+        const { Server , rol , _usuario } = this.props;
+        var departamento = ( id_departamento != null ) ? id_departamento : this.state.id_departamento ;
+        var data = new FormData();
+        data.append('id_departamento', departamento);
+        data.append('rol', rol);
+        data.append('estado' , estado); 
+        data.append('_usuario', _usuario);
+        
+        http._POST(String(Server) + 'dashboad/dashboad.php?grafica=true' , data ).then((res) => {
             this.setState({ data: res });
+            this.setState({select : estado});
         }).catch(err => {
             message.error("Error al cargar grafica." + err);
         });
@@ -65,15 +189,15 @@ class Dashboad extends Component {
     handleModal(e) {
         if (e != null) {
             const { Server } = this.props;
-            const { tecnico ,  estado } = e["activePayload"][0]["payload"];
+            const { tecnico, estado } = e["activePayload"][0]["payload"];
             const { select } = this.state;
-            
+
             var data = new FormData();
             data.append('tecnico', tecnico);
             data.append('estado', estado);
-            data.append('select', select);            
-            
-            http._POST(String(Server) + 'dashboad/dashboad.php?detalle=true' , data ).then((res) => {
+            data.append('select', select);
+
+            http._POST(String(Server) + 'dashboad/dashboad.php?detalle=true', data).then((res) => {
                 this.setState({
                     detalle: res,
                     modal_Usuario: !this.state.modal_Usuario,
@@ -129,84 +253,6 @@ class Dashboad extends Component {
     getTicketsAbiertas() {
         this.getIndicadores();
         this.getEstadistica(this.state.select);
-    }
-
-    render() {
-        const { select, color, data, indicadores } = this.state;
-
-        return (
-            <div className="content-dashboard">
-                {this.modalUsuario()}
-                {this.modalVerTicket()}
-                <div>
-                    <Grid className="grid" container columns={3} padded stackable>
-                        <Grid.Column >
-                            <div className="grid-colum"
-                                style={{ background: (select == 0) ? color[select] : '' }}
-                                onClick={this.handleSelect(0)}
-                            >
-                                <div className="icon">
-                                    <Icon type="unlock" style={{ color: (select == 0) ? 'white' : '' }}/>
-                                </div>
-                                <div className="text">
-                                    Tickets Abiertos
-                                    <p id="number" style={{ color: (select == 0) ? 'white' : '' }}>
-                                        {indicadores["abiertos"]}
-                                    </p>
-                                </div>
-                            </div>
-                        </Grid.Column>
-                        <Grid.Column >
-                            <div className="grid-colum"
-                                style={{ background: (select == 1) ? color[select] : '' }}
-                                onClick={this.handleSelect(1)}
-                            >
-                                <div className="icon">
-                                    <Icon type="lock" style={{ color: (select == 1) ? 'white' : '' }}/>
-                                </div>
-                                <div className="text">
-                                    Tickets Cerrados
-                                    <p id="number" style={{ color: (select == 1) ? 'white' : '' }}>
-                                        {indicadores["cerrados"]}
-                                    </p>
-                                </div>
-                            </div>
-                        </Grid.Column>
-                        <Grid.Column >
-                            <div className="grid-colum"
-                                id={2}
-                                style={{ background: (select == 2) ? color[select] : '' }}
-                                onClick={this.handleSelect(2)}
-                            >
-                                <div className="icon">
-                                    <Icon type="pie-chart" style={{ color: (select == 2) ? 'white' : '' }}/>
-                                </div>
-                                <div className="text">
-                                    Satisfacción
-                                    <p id="number" style={{ color: (select == 2) ? 'white' : '' }}>
-                                        {indicadores["satisfaccion"]} %
-                                    </p>
-                                </div>
-                            </div>
-                        </Grid.Column>
-                    </Grid>
-                </div>
-                <div className="stadistic">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={data}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                            onClick={this.handleModal}
-                        >
-                            <XAxis dataKey="usuario" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey={select != 2 ? 'tickers' : 'porcentaje'} fill={color[select]} />                                                        
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-        )
     }
 
     modalUsuario() {
