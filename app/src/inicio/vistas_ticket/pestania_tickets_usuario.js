@@ -8,6 +8,8 @@ import { Progress, DatePicker , Icon, Form, message, Button , Input} from 'antd'
 import http from '../../services/http.services';
 
 var moment = require('moment');
+require("moment/min/locales.min");
+moment.locale('es');
 const Search = Input.Search;
 const {  MonthPicker } = DatePicker;
 
@@ -23,7 +25,6 @@ class PestaniaTicketsUsuario extends Component {
       texto_busqueda : '',
       date: moment() 
     }
-    console.log(this.props);
   }
 
   componentDidMount() {
@@ -37,9 +38,9 @@ class PestaniaTicketsUsuario extends Component {
       <div  style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', width: '100%' }}>
         {this.modalAbrirTicket()}
         {this.modalVerTicket()}
-        <div style={{ display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
+        <div style={{ display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center',  marginBottom: 30 }}>
           {(this.state.texto_busqueda !== undefined) &&
-            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', }}>
+            <div >
               <Search
                 style={{ width: 300, height: 33, marginLeft: 100, }}
                 defaultValue={this.state.texto_busqueda}
@@ -50,10 +51,10 @@ class PestaniaTicketsUsuario extends Component {
             </div>
           }
           {(this.props.modalidad == 'tickets_cerradas' || this.props.modalidad == 'tickets_cerradas_soporte') && 
-            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', }}>
+            <div style={{ marginLeft: '10px' }}>
               <MonthPicker
                 id="datepicker"
-                style={{ width: '20%' }}
+                style={{ width: '150px' }}
                 format="YYYY-MM"
                 value={ this.state.date }
                 onChange={(value) => {
@@ -70,7 +71,7 @@ class PestaniaTicketsUsuario extends Component {
               <Button
                 type="dashed"
                 onClick={() => { this.solicito_abrirTicket() }}
-                style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '100%', height: '100px', alignItems: 'center', justifyContent: 'center' ,border: 'solid' ,  borderStyle: 'dashed'}}
+                style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '100%', height: '125px', alignItems: 'center', justifyContent: 'center' ,border: 'solid' ,  borderStyle: 'dashed' , paddingTop: '5%'}}
               >
                 <Icon type="plus-circle" style={{ fontSize: 35, marginTop: 5 }} />
                 <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap', fontSize: 15, marginTop: 5 }}>
@@ -100,7 +101,11 @@ class PestaniaTicketsUsuario extends Component {
       let array = this.state.tickets_abiertas;
       array = array.filter((elemento) => {
         let nombre = elemento.nombre_ticket.toLowerCase();
-        return nombre.indexOf(valor.toLowerCase()) != -1;
+        let correlativo = elemento.correlativo;
+        let usuario = elemento.nombre_completo.toLowerCase();
+        return nombre.indexOf(valor.toLowerCase()) != -1 || 
+               correlativo.indexOf(valor) != -1 ||
+               usuario.indexOf(valor.toLowerCase()) != -1; 
       });
       this.setState({ tickets_abiertas_resultado: array });
     } else {
@@ -194,6 +199,7 @@ class PestaniaTicketsUsuario extends Component {
     data.append('id_usuario', id_usuario);
     var mes = (value != null) ? value : this.state.date;
     data.append('mes' , mes.format('YYYY-MM-DD')); 
+    data.append('rol' , this.props.rol);
 
     if (fecha) {
       data.append('fecha', moment(fecha).format('YYYY-MM-DD'));
@@ -231,13 +237,17 @@ class ItemTicket extends Component {
           borderColor: 'black',
           outline: 'none',
           padding: '5px',
-          height: '100px',
+          height: '125px',
           width: '100%',
         }}>
 
-        {(parseInt(ticket.estado) == 0) &&
-          <div style={{ fontSize: 10, whiteSpace: 'pre-wrap' }}>
-            Fase: {ticket.fase_ticket}
+        {(parseInt(ticket.estado) == 0) ? 
+          <div style={{ fontSize: 8, whiteSpace: 'pre-wrap' }}>
+            <b>Fase:</b> {ticket.fase_ticket} <b>Fecha:</b> {ticket.creacion} 
+          </div>
+          :
+          <div style={{ fontSize: 8, whiteSpace: 'pre-wrap' }}>
+            <b>Fecha Cierre:</b> {ticket.fecha_fin} 
           </div>
         }
 
@@ -245,7 +255,7 @@ class ItemTicket extends Component {
           <div style={{ display: 'flex', justifyContent: 'center', width: '100%', fontSize: 10, whiteSpace: 'pre-wrap' }}>
             <div style={{ backgroundColor: '#F4D03F', color: 'black', width: '55%', borderRadius: 4, padding: '1px' }}>
               ¡Pendiente de Calificar!
-              </div>
+            </div>
           </div>
         }
 
@@ -257,20 +267,21 @@ class ItemTicket extends Component {
             <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap' }}>
               <h4>{ticket.nombre_ticket}</h4>
             </div>
-            <div style={{ fontSize: 10, whiteSpace: 'pre-wrap' }}>
+            <div style={{ fontSize: 8, whiteSpace: 'pre-wrap' }}>
               {ticket.descripcion}
             </div>
-            {(parseInt(ticket.estado) == 1) &&
               <div style={{ fontSize: 10, whiteSpace: 'pre-wrap' }}>
                 Por {ticket.nombre_completo}
               </div>
-            }
+            <div style={{ fontSize: 10, whiteSpace: 'pre-wrap' }}>
+              <b>{ticket.correlativo}</b>
+            </div>
           </div>
 
           {(parseInt(ticket.estado) == 0 || (!ticket.id_calificacion && modalidad == 'tickets_abiertas')) &&
             <div style={{ padding: 5 }}>
               {(parseInt(ticket.estado) == 0) &&
-                <Progress strokeLinecap="square" type="circle" percent={parseInt((parseInt(ticket.total_fases_ticket) * 100) / parseInt(ticket.total_fases))} width={50} />
+                <Progress strokeLinecap="square" type="circle" percent={parseInt((parseInt(ticket.total_fases_ticket - 1) * 100) / parseInt(ticket.total_fases))} width={50} />
               }
               {(parseInt(ticket.estado) == 1) &&
                 <Progress strokeLinecap="square" type="circle" percent={100} width={50} />

@@ -28,12 +28,12 @@ export const initializeFirebase = (_usuario , Server ) => {
             console.log("err" , err);
         });
     }).catch(function (err) {
-        console.log("err: ", err);
+        console.log("err firebase: ", err);
     });
 
     messaging.onMessage(function (payload) {
         const { title, body, icon } = payload.data;
-        toastr.info(body, title);
+        //toastr.info(body, title);
         Push.create(title, {
             body: body,
             icon: icon,
@@ -55,6 +55,6 @@ export const initializeFirebase = (_usuario , Server ) => {
                 }).catch(function (err) {
                     console.log('Service worker registration failed, error:', err);
                 })
-        );
+        ).catch(err => console.log("err service" , err))
     }
 }

@@ -5,7 +5,8 @@ import { Rate, Dropdown, Menu, Icon, Divider, Tabs, Input, Tooltip, message, Sel
 import http from '../../services/http.services';
 
 var moment = require('moment');
-//var esLocale = require('moment/locale/es');
+require("moment/min/locales.min");
+moment.locale('es');
 
 const Option = Select.Option;
 const TabPane = Tabs.TabPane;
@@ -13,8 +14,8 @@ const { TextArea } = Input;
 
 class ver_ticket_abierta extends Component {
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       ticket: undefined,
       calificacion_fase_anterior: 0,
@@ -56,7 +57,7 @@ class ver_ticket_abierta extends Component {
               <div style={{ display: 'flex', flexDirection: 'column', width: '55%', height: '100%', alignItems: 'center', }}>
                 {(parseInt(this.state.ticket.estado) == 0 && this.props.modalidad == 'soporte') &&
                   <div style={{ display: 'flex', flex: 0, width: '100%', backgroundColor: 'transparent', justifyContent: 'flex-start' }}>
-                    <Dropdown overlay={menu} trigger='click'>
+                    <Dropdown overlay={menu} trigger={'click'}>
                       <Button style={{ marginLeft: 8, border: 'none', outline: 'none', }}>
                         <Icon type="setting" style={{ fontSize: 23, color: '#909497' }} />
                       </Button>
@@ -124,7 +125,7 @@ class ver_ticket_abierta extends Component {
                       */}
                       {parseInt(this.state.ticket.estado) == 1 &&
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '5px', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: this.Numero(this.state.ticket.id_calificacion) == 0 ? '#3498DB' : '#F7DC6F' }}>
-                          {this.Numero(this.state.ticket.id_calificacion) == 0 &&
+                          {(this.Numero(this.state.ticket.id_calificacion) == 0) &&
                             <div>
                               <h4 style={{ lineHeight: 0 }}>¡Ayudanos a mejorar!</h4>
                               <label style={{ fontSize: 10 }}>Contestando esta pequeña encuesta:</label>
@@ -355,7 +356,7 @@ class ver_ticket_abierta extends Component {
                       <Rate disabled={true} value={parseInt(fase.calificacion_fase)} style={{ fontSize: 15, backgroundColor: 'rgba(255, 255, 255, 1)', borderRadius: 10, paddingLeft: '10px', paddingBottom: '3px' }} />
                     </div>
                   }
-                  Soporte por {fase.nombre_tecnico}
+                  <b>Soporte por</b> {fase.nombre_tecnico}
                 </label>
               </div>
               {parseInt(fase.estado) == 0 &&
@@ -401,7 +402,7 @@ class ver_ticket_abierta extends Component {
                 <TextArea onChange={this.mesdnsajeSet.bind(this)} rows={4} style={{ width: '70%', height: '100%', backgroundColor: '#FBFCFC', borderRadius: 13, overflowY: 'hidden' }} placeholder="Enviar un mensaje" />
                 <Button disabled={this.state.cargando} onClick={this.enviarMensaje.bind(this)} type="primary" htmlType="submit" style={{ width: '30%', borderRadius: 13, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
                   Enviar
-            </Button>
+                </Button>
               </div>
             }
           </div>

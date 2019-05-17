@@ -32,9 +32,11 @@ class ver_puesto extends Component {
         <Tabs onChange={() => { }} type="card"
           tabBarExtraContent={
             <div>
-              <Button onClick={this.solicito_nuevaCategoria.bind(this)} type="primary" htmlType="button" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Icon type="plus-circle" style={{ color: 'white', fontSize: 13 }} /> Nueva Categoría
-              </Button>
+              { this.props.accesos['Nueva_Categoria'] &&
+                <Button onClick={this.solicito_nuevaCategoria.bind(this)} type="primary" htmlType="button" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Icon type="plus-circle" style={{ color: 'white', fontSize: 13 }} /> Nueva Categoría
+                </Button>
+              }              
             </div>
           }
         >
@@ -45,7 +47,7 @@ class ver_puesto extends Component {
               }
             >
               {(!this.state.cargando) &&
-                <CategoriaView _usuario={this.props._usuario} solicitarEdicionCat={this.solicitarEdicionCat.bind(this)} categoria={categoria} getCategorias={this.getCategorias.bind(this)} Server={this.props.Server} id_categoria={categoria.id_categoria} categorias={this.state.categorias} />
+                <CategoriaView rol={this.props.rol} accesos={this.props.accesos}  _usuario={this.props._usuario} solicitarEdicionCat={this.solicitarEdicionCat.bind(this)} categoria={categoria} getCategorias={this.getCategorias.bind(this)} Server={this.props.Server} id_categoria={categoria.id_categoria} categorias={this.state.categorias} />
               }
             </TabPane>
           ))}

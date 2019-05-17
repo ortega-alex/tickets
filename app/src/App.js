@@ -37,7 +37,8 @@ class App extends Component {
       accesos : {} ,
       modulos : {} ,
       departamentos: [] ,
-      rol: null
+      rol: null ,
+      soporte: null
     }
   }
 
@@ -51,7 +52,7 @@ class App extends Component {
 
   render() {
 
-    const { session_id, pathname, cargando , _usuario  , accesos , modulos , departamentos , rol } = this.state;
+    const { session_id, pathname, cargando , _usuario  , accesos , modulos , departamentos , rol , soporte } = this.state;
     return (
       <Router history={history}>
         <div style={{ display: "flex", width: "100%", height: "100vh" }} >
@@ -84,30 +85,39 @@ class App extends Component {
                     <Menu.Item key="/inicio"><Link to="/inicio" onClick={() => { this.setState({ pathname: "/inicio" }) }}><Icon type="home" />Inicio</Link></Menu.Item>
                   }
                   {
-                    modulos['Calendario'] && 
+                    (modulos['Calendario'] && soporte == 1 ) && 
                     <Menu.Item key="/calendario"><Link to="/calendario" onClick={() => { this.setState({ pathname: "/calendario" }) }}><Icon type="calendar" />Calendario</Link></Menu.Item>
                   }
                   <SubMenu key="5" title={<span><Icon type="setting" /><span>Configuración</span></span>}>
-                    <Menu.Item key="/configuracion/usuarios">
-                      <Link to="/configuracion/usuarios" onClick={() => { this.setState({ pathname: "/configuracion/usuarios" }) }}>
-                        <Icon type="user" />Usuarios y Permisos
-                   </Link>
-                    </Menu.Item>
-                    <Menu.Item key="/configuracion/tickets">
-                      <Link to="/configuracion/tickets" onClick={() => { this.setState({ pathname: "/configuracion/tickets" }) }}>
-                        <Icon type="tag" />Tickets
-                   </Link>
-                    </Menu.Item>
-                    <Menu.Item key="/configuracion/departamentos">
-                      <Link to="/configuracion/departamentos" onClick={() => { this.setState({ pathname: "/configuracion/departamentos" }) }}>
-                        <Icon type="build" />Departamentos
-                   </Link>
-                    </Menu.Item>
-                    <Menu.Item key="/configuracion/puestos">
-                      <Link to="/configuracion/puestos" onClick={() => { this.setState({ pathname: "/configuracion/puestos" }) }}>
-                        <Icon type="profile" />Puestos
-                   </Link>
-                    </Menu.Item>
+                    {
+                      modulos['Configuracion_Usuarios'] && 
+                      <Menu.Item key="/configuracion/usuarios">
+                        <Link to="/configuracion/usuarios" onClick={() => { this.setState({ pathname: "/configuracion/usuarios" }) }}>
+                          <Icon type="user" />Usuarios y Permisos
+                        </Link>
+                      </Menu.Item>
+                    }
+                    { modulos['Configuracion_Tickets'] && 
+                      <Menu.Item key="/configuracion/tickets">
+                        <Link to="/configuracion/tickets" onClick={() => { this.setState({ pathname: "/configuracion/tickets" }) }}>
+                          <Icon type="tag" />Tickets
+                        </Link>
+                      </Menu.Item>
+                    }
+                    { modulos['Configuracion_Departamentos'] && 
+                      <Menu.Item key="/configuracion/departamentos">
+                        <Link to="/configuracion/departamentos" onClick={() => { this.setState({ pathname: "/configuracion/departamentos" }) }}>
+                          <Icon type="build" />Departamentos
+                        </Link>
+                      </Menu.Item>
+                    }
+                    { modulos['Configuracion_Puestos'] && 
+                      <Menu.Item key="/configuracion/puestos">
+                        <Link to="/configuracion/puestos" onClick={() => { this.setState({ pathname: "/configuracion/puestos" }) }}>
+                          <Icon type="profile" />Puestos
+                        </Link>
+                      </Menu.Item>
+                    }
                   </SubMenu>
                 </Menu>
               </div>
@@ -116,13 +126,12 @@ class App extends Component {
                 {pathname == '/' &&
                   <DashboadView Server={Server} _usuario={_usuario} accesos={accesos} departamentos={departamentos}  rol={rol}  />
                 }
-
-                <Route path="/inicio" render={() => <InicioView Server={Server} _usuario={_usuario}/>} />
-                <Route path="/configuracion/departamentos" render={() => <DepartamentosView Server={Server} _usuario={_usuario} />} />
-                <Route path="/configuracion/puestos" render={() => <PuestosView Server={Server} _usuario={_usuario} />} />
-                <Route path="/configuracion/tickets" render={() => <TicketsView Server={Server} _usuario={_usuario} />} />
-                <Route path="/configuracion/usuarios" render={() => <UsuariosView Server={Server} _usuario={_usuario} />} />
-                <Route path="/calendario" render={() => <CalendarioView Server={Server} />} />
+                <Route path="/inicio" render={() => <InicioView Server={Server} _usuario={_usuario} accesos={accesos} rol={rol} />} />
+                <Route path="/configuracion/departamentos" render={() => <DepartamentosView Server={Server} _usuario={_usuario} accesos={accesos} rol={rol} />} />
+                <Route path="/configuracion/puestos" render={() => <PuestosView Server={Server} _usuario={_usuario} accesos={accesos} rol={rol} />} />
+                <Route path="/configuracion/tickets" render={() => <TicketsView Server={Server} _usuario={_usuario} accesos={accesos} rol={rol} />} />
+                <Route path="/configuracion/usuarios" render={() => <UsuariosView Server={Server} _usuario={_usuario} accesos={accesos} rol={rol} />} />
+                <Route path="/calendario" render={() => <CalendarioView Server={Server} _usuario={_usuario} accesos={accesos} rol={rol} />} />
               </div>
             </div>
           }
@@ -165,7 +174,8 @@ class App extends Component {
       accesos : responseJson['accesos'] ,
       modulos : responseJson['modulos'] ,
       departamentos : responseJson['departamentos'] ,
-      rol : responseJson['id_rol'] 
+      rol : responseJson['id_rol'] ,
+      soporte : responseJson['soporte']
     });
   }
 
@@ -189,7 +199,8 @@ class App extends Component {
           accesos : res['accesos'] ,
           modulos : res['modulos'] ,
           departamentos : res['departamentos'] ,
-          rol : res['id_rol'] 
+          rol : res['id_rol'] ,
+          soporte : res['soporte']
         });      
         initializeFirebase(res["id_usuario"] , Server );
       }

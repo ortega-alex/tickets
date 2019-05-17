@@ -4,14 +4,18 @@ import Ticket_Vista_All from "../inicio/vistas_ticket/vista_ticket_all";
 import http from '../services/http.services';
 
 import { Grid } from 'semantic-ui-react'
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip , Legend } from 'recharts';
 import { AgGridReact, AgGridColumn } from 'ag-grid-react';
-import { Icon, Button, message, Form, Select } from 'antd';
+import { Icon, Button, message, Form, Select, DatePicker , Tooltip as TooltipAntd , Switch  } from 'antd';
 import Rodal from 'rodal';
 import './dashboard.component.css';
 
+var moment = require('moment');
+require("moment/min/locales.min");
+moment.locale('es');
 const FormItem = Form.Item;
 const Option = Select.Option;
+const { MonthPicker } = DatePicker;
 
 class Dashboad extends Component {
 
@@ -21,7 +25,7 @@ class Dashboad extends Component {
             select: 0,
             data: [],
             indicadores: {},
-            color: ["#56b3ff", "#1890ff", "#1565C0"],
+            color: ["#56b3ff", "#1890ff", "#1565C0"] ,
             modal_Usuario: false,
             user: {
                 name: '',
@@ -29,22 +33,22 @@ class Dashboad extends Component {
             },
             detalle: [],
             id_usuario_ticket: null,
-            id_departamento : null
+            id_departamento: null,
+            date: moment(),
+            todos: false
         }
         this.handleSelect = this.handleSelect.bind(this);
         this.handleModal = this.handleModal.bind(this);
-        console.log(this.props);
     }
 
     componentDidMount() {
-        console.log("props" , this.props);
         this.getIndicadores(this.props.departamentos[0].id_departamento);
-        this.getEstadistica( 0 , this.props.departamentos[0].id_departamento);
+        this.getEstadistica(0, this.props.departamentos[0].id_departamento);
     }
 
     render() {
-        const { select, color, data, indicadores  } = this.state;
-        const { accesos, _usuario , departamentos , rol } = this.props;
+        const { select, color, data, indicadores , id_departamento , date , todos , cargando } = this.state;
+        const { accesos, departamentos, rol } = this.props;
         return (
             <div className="content-dashboard">
                 {this.modalUsuario()}
@@ -64,7 +68,7 @@ class Dashboad extends Component {
                                     <div className="text">
                                         Tickets Abiertos
                                         <p id="number" style={{ color: (select == 0) ? 'white' : '' }}>
-                                            {  (indicadores["abiertos"]) ? indicadores["abiertos"] : 0  }
+                                            {(indicadores["abiertos"]) ? indicadores["abiertos"] : 0}
                                         </p>
                                     </div>
                                 </div>
@@ -83,7 +87,7 @@ class Dashboad extends Component {
                                     <div className="text">
                                         Tickets Cerrados
                                         <p id="number" style={{ color: (select == 1) ? 'white' : '' }}>
-                                            { (indicadores["cerrados"]) ? indicadores["cerrados"] : 0  }
+                                            {(indicadores["cerrados"]) ? indicadores["cerrados"] : 0}
                                         </p>
                                     </div>
                                 </div>
@@ -103,7 +107,7 @@ class Dashboad extends Component {
                                     <div className="text">
                                         Satisfacción
                                         <p id="number" style={{ color: (select == 2) ? 'white' : '' }}>
-                                            { (indicadores["satisfaccion"]) ? indicadores["satisfaccion"] : 0  } %
+                                            {(indicadores["satisfaccion"]) ? indicadores["satisfaccion"] : 0} %
                                         </p>
                                     </div>
                                 </div>
@@ -115,7 +119,7 @@ class Dashboad extends Component {
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={data}
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                            onClick={this.handleModal}                        >
+                            onClick={this.handleModal}>
                             <XAxis dataKey="usuario" />
                             <YAxis />
                             <Tooltip />
@@ -124,58 +128,108 @@ class Dashboad extends Component {
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
-                { rol != 1 && 
-                    <div style={{ display: 'flex', flexDirection: 'row', height: '50%', width: '100%' , alignItems : 'center'}}>
-                        <FormItem style={{ width: '25%', paddingLeft: '10%' }}>
-                            <Select
-                                showSearch
-                                autoClearSearchValue
-                                placeholder="Selecciona Departamento"
-                                optionFilterProp="children"
-                                defaultValue={( departamentos.length > 0 ? departamentos[0]['departamento'] : null)}
-                                onChange={(seleccion) => { this.setState({id_departamento : seleccion })  ; this.getIndicadores(seleccion) ; this.getEstadistica(0 , seleccion) ; }}
-                                style={{ width: '80%' }}
-                                filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                            >
-                                {
-                                    departamentos.map((departamento , i) => (
-                                        <Option key={i} value={departamento.id_departamento}>{departamento.departamento}</Option>
-                                    ))
-                                }
-                            </Select>
-                        </FormItem>
+
+                <div style={{ display: 'flex', flex: 1, flexDirection: 'row',  width: '100%', padding: '5%' }}>
+                    <div style={{ width: '20%', height: '30%', paddingTop: '5px' }}>
+                        <MonthPicker
+                            id="datepicker"
+                            style={{ width: '100%' }}
+                            format="YYYY-MM"
+                            value={this.state.date}
+                            onChange={(value) => {
+                                this.handleChangeDate(value);
+                            }}
+                        />
                     </div>
-                }                
+                    {rol != 1 &&
+                        <div style={{ display: 'flex', flex: 1, flexDirection: 'row' }}>
+                            <FormItem style={{ paddingLeft: '5%' ,  width: '20%'}}>
+                                <Select
+                                    showSearch
+                                    autoClearSearchValue
+                                    placeholder="Selecciona Departamento"
+                                    optionFilterProp="children"
+                                    defaultValue={(departamentos.length > 0 ? departamentos[0]['departamento'] : null)}
+                                    onChange={(seleccion) => { this.setState({ id_departamento: seleccion }); this.getIndicadores(seleccion); this.getEstadistica(0, seleccion); }}
+                                    style={{ width: '80%' }}
+                                    filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                                >
+                                    {
+                                        departamentos.map((departamento, i) => (
+                                            <Option key={i} value={departamento.id_departamento}>{departamento.departamento}</Option>
+                                        ))
+                                    }
+                                </Select>
+                            </FormItem>                  
+
+                            <FormItem style={{ display: 'flex', justifyContent: 'flex-end' }}
+                                label={(
+                                    <span>
+                                        Todos&nbsp;
+                                        <TooltipAntd title="Permitir filtrar por todos los ticker ingresados al sistema.">
+                                            <Icon type="question-circle-o" />
+                                        </TooltipAntd>
+                                    </span>
+                                    )}
+                                >
+                                <Switch 
+                                    loading={cargando} 
+                                    defaultChecked={todos} 
+                                    onChange={(valor) => { 
+                                        this.setState({todos : valor}) ; 
+                                        console.log(todos , valor);
+                                        this.getIndicadores(id_departamento , null , valor);
+                                        this.getEstadistica(select , id_departamento , null , valor);
+                                    }} />
+                            </FormItem>
+                        </div>
+                     }
+                </div>
             </div>
         )
     }
 
-    getIndicadores(id_departamento) {
-        const { Server, _usuario , rol } = this.props;
+    handleChangeDate(value) {
+        this.setState({ date: value });
+        const { id_departamento, select } = this.state;
+        this.getIndicadores(id_departamento, value);
+        this.getEstadistica(select, id_departamento, value);
+    }
+
+    getIndicadores(id_departamento, date = null , todos = null ) {
+        const { Server, _usuario, rol } = this.props;
+        var mes = (date != null) ? date : this.state.date;
         var data = new FormData();
-        data.append('id_usuario', _usuario);
+        var t = (todos == null) ? ((this.state.todos == false) ? 0 : 1) : ((todos == false ) ? 0 : 1);
+        data.append('_usuario', _usuario);
         data.append('id_departamento', id_departamento);
         data.append('rol', rol);
+        data.append('mes', mes.format('YYYY-MM-DD'));
+        data.append('todos', t);
 
-        http._POST(String(Server) + 'dashboad/dashboad.php?get' , data ).then((res) => {
-            this.setState({ id_departamento : id_departamento , indicadores: res });
+        http._POST(String(Server) + 'dashboad/dashboad.php?get', data).then((res) => {
+            this.setState({ todos : (t == 1) ? true : false , id_departamento: id_departamento, indicadores: res });
         }).catch(err => {
             message.error("Error al cargar informacion." + err);
         });
     }
 
-    getEstadistica(estado , id_departamento = null) {
-        const { Server , rol , _usuario } = this.props;
-        var departamento = ( id_departamento != null ) ? id_departamento : this.state.id_departamento ;
+    getEstadistica(estado, id_departamento = null, date = null , todos = null) {
+        const { Server, rol, _usuario } = this.props;
+        var departamento = (id_departamento != null) ? id_departamento : this.state.id_departamento;
+        var mes = (date != null) ? date : this.state.date;
         var data = new FormData();
+        var t = (todos == null) ? ((this.state.todos == false) ? 0 : 1) : ((todos == false ) ? 0 : 1);
         data.append('id_departamento', departamento);
         data.append('rol', rol);
-        data.append('estado' , estado); 
+        data.append('estado', estado);
         data.append('_usuario', _usuario);
-        
-        http._POST(String(Server) + 'dashboad/dashboad.php?grafica=true' , data ).then((res) => {
-            this.setState({ data: res });
-            this.setState({select : estado});
+        data.append('mes', mes.format('YYYY-MM-DD'));       
+        data.append('todos', t);
+
+        http._POST(String(Server) + 'dashboad/dashboad.php?grafica=true', data).then((res) => {
+            this.setState({ todos : (t == 1) ? true : false , data: res, id_departamento: departamento });
+            this.setState({ select: estado });
         }).catch(err => {
             message.error("Error al cargar grafica." + err);
         });
@@ -187,15 +241,22 @@ class Dashboad extends Component {
     }
 
     handleModal(e) {
-        if (e != null) {
-            const { Server } = this.props;
+        if (e != null && this.props.accesos['detalle_grafica']) {
+            const { Server, _usuario , rol} = this.props;
             const { tecnico, estado } = e["activePayload"][0]["payload"];
-            const { select } = this.state;
+            const { select, id_departamento } = this.state;
+            var mes = (this.state.date != null) ? this.state.date : moment();
+            var t = (this.state.todos == false) ? 0 : 1;
 
             var data = new FormData();
             data.append('tecnico', tecnico);
             data.append('estado', estado);
             data.append('select', select);
+            data.append('_usuario', _usuario);
+            data.append('id_departamento', id_departamento);
+            data.append('mes', mes.format('YYYY-MM-DD'));
+            data.append('todos', t);
+            data.append('rol', rol);
 
             http._POST(String(Server) + 'dashboad/dashboad.php?detalle=true', data).then((res) => {
                 this.setState({
@@ -213,9 +274,11 @@ class Dashboad extends Component {
     }
 
     verTicket(value) {
+        const { _usuario } = this.props;
+        var modalidad =  (value["id_usuaio"] == _usuario ) ? "usuario" : "soporte";
         this.setState({
             id_usuario_ticket: value["id_usuario_ticket"],
-            modalidad: (value["estado"] == "Abierto") ? "tickets_abiertas" : "tickets_cerradas",
+            modalidad: modalidad ,
             modal_verTicket: true
         });
     }
@@ -226,8 +289,8 @@ class Dashboad extends Component {
 
     modalVerTicket() {
         const { modal_verTicket, id_usuario_ticket, modalidad } = this.state;
-        const { Server } = this.props;
-        const id_usuario = 3;
+        const { Server , _usuario } = this.props;
+
         return (
             <Rodal
                 animation={'fade'}
@@ -242,8 +305,8 @@ class Dashboad extends Component {
                         <Ticket_Vista_All
                             getTicketsAbiertas={this.getTicketsAbiertas.bind(this)}
                             Server={Server}
-                            modalidad={(modalidad == 'tickets_abiertas_soporte' || modalidad == 'tickets_cerradas_soporte') ? 'soporte' : 'usuario'}
-                            id_usuario_ticket={id_usuario_ticket} id_usuario={id_usuario} cerrarModalVerTicket={this.cerrarModalVerTicket.bind(this)} />
+                            modalidad={modalidad}
+                            id_usuario_ticket={id_usuario_ticket} id_usuario={_usuario} cerrarModalVerTicket={this.cerrarModalVerTicket.bind(this)} />
                     </div>
                 }
             </Rodal>
@@ -251,12 +314,15 @@ class Dashboad extends Component {
     }
 
     getTicketsAbiertas() {
-        this.getIndicadores();
-        this.getEstadistica(this.state.select);
+        /*this.getIndicadores();
+        this.getEstadistica(this.state.select);*/
+        this.getIndicadores(this.state.id_departamento);
+        this.getEstadistica(this.state.select, this.state.id_departamento);
     }
 
     modalUsuario() {
         const { modal_Usuario, user, detalle } = this.state;
+        const { accesos } = this.props;
         return (
             <Rodal
                 animation={'slideUp'}
@@ -295,15 +361,17 @@ class Dashboad extends Component {
                                 <AgGridColumn headerName="Usuario" field="usuario" />
                                 <AgGridColumn headerName="Departamento" field={"departamento"} />
                                 <AgGridColumn headerName="Fecha" field={"fecha"} />
-                                <AgGridColumn suppressFilter headerName=" " field={"data"}
-                                    cellRendererFramework={(param) => {
-                                        return (
-                                            <Button onClick={() => { this.verTicket(param.data) }} type="primary" htmlType="button" style={{ marginLeft: 10, height: '70%', width: '55%', justifyContent: 'center', alignItems: 'center', fontSize: 10 }}>
-                                                <Icon type="eye" style={{ color: 'white', fontSize: 10, }} />
-                                            </Button>
-                                        )
-                                    }}
-                                />
+                                {accesos['detalle_de_tickets'] &&
+                                    <AgGridColumn suppressFilter headerName=" " field={"data"}
+                                        cellRendererFramework={(param) => {
+                                            return (
+                                                <Button onClick={() => { this.verTicket(param.data) }} type="primary" htmlType="button" style={{ marginLeft: 10, height: '70%', width: '55%', justifyContent: 'center', alignItems: 'center', fontSize: 10 }}>
+                                                    <Icon type="eye" style={{ color: 'white', fontSize: 10, }} />
+                                                </Button>
+                                            )
+                                        }}
+                                    />
+                                }
                             </AgGridReact>
                         </div>
                     </div>

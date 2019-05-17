@@ -34,14 +34,16 @@ class puestos extends Component {
       <div style={{ display: "flex", flexDirection: "column", padding: "10px", width: "100%", height: "100%" }} >
         {this.modalPuesto()}
         {this.modalNuevoPuesto()}
-        <div style={{ textAlign: 'right' }}>
-          <button
-            onClick={this.nuevoPuesto.bind(this)}
-            style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
-          >
-            <Icon type="plus-circle" style={{ color: '#3498DB', fontSize: 25, paddingRight: 20 }} />
-          </button>
-        </div>
+        { this.props.accesos['Nuevo_Puesto'] &&
+          <div style={{ textAlign: 'right' }}>
+            <Button
+              onClick={this.nuevoPuesto.bind(this)}
+              style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
+            >
+              <Icon type="plus-circle" style={{ color: '#3498DB', fontSize: 25, paddingRight: 20 }} />
+            </Button>
+          </div>
+        }       
         <div style={{ textAlign: 'center' }}>
           <h3>Puestos</h3>
           Selecciona un puesto para modificar su perfil.
@@ -98,23 +100,25 @@ class puestos extends Component {
                   <Input prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Nombre del puesto" />
                 )}
               </FormItem>
-              <div style={{ display: 'flex', flexDirection: 'row', padding: "10px" }}>
-                <FormItem
-                  style={{ display: 'flex', flex: 1 }}
-                  label={(
-                    <span>
-                      Activo&nbsp;
-                        <Tooltip title="Si inactivas un puesto, sus usarios pertenecientes no podrán crear tickets.">
-                        <Icon type="question-circle-o" />
-                      </Tooltip>
-                    </span>
-                  )}
-                >
-                  {getFieldDecorator('activo', { rules: [{ required: false, }] })(
-                    <Switch defaultChecked={frm_activo} onChange={(valor) => { this.setState({ frm_activo: valor }) }} />
-                  )}
-                </FormItem>
-              </div>
+              { this.props.accesos['Activar/Desactivar_Puesto'] &&
+                <div style={{ display: 'flex', flexDirection: 'row', padding: "10px" }}>
+                  <FormItem
+                    style={{ display: 'flex', flex: 1 }}
+                    label={(
+                      <span>
+                        Activo&nbsp;
+                          <Tooltip title="Si inactivas un puesto, sus usarios pertenecientes no podrán crear tickets.">
+                          <Icon type="question-circle-o" />
+                        </Tooltip>
+                      </span>
+                    )}
+                  >
+                    {getFieldDecorator('activo', { rules: [{ required: false, }] })(
+                      <Switch defaultChecked={frm_activo} onChange={(valor) => { this.setState({ frm_activo: valor }) }} />
+                    )}
+                  </FormItem>
+                </div>
+              }             
             </div>
             <div style={{ display: 'flex', height: "10%", justifyContent: 'center' }}>
               <Button disabled={cargando} type="primary" htmlType="submit" style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
@@ -145,19 +149,21 @@ class puestos extends Component {
         {(this.state.modal_Puesto) &&
           <div style={{ display: 'flex', flex: 1, height: '100%', flexDirection: 'row' }}>
             <div style={{ width: '10%', marginTop: '10%' }}>
-              <Button
-                onClick={this.solicitarEdicion.bind(this)}
-                style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
-              >
-                <span>
-                  <Tooltip title="Editar Puesto">
-                    <Icon type="edit" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
-                  </Tooltip>
-                </span>
-              </Button>
+              { this.props.accesos['Editar_Puesto'] && 
+                <Button
+                  onClick={this.solicitarEdicion.bind(this)}
+                  style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
+                >
+                  <span>
+                    <Tooltip title="Editar Puesto">
+                      <Icon type="edit" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
+                    </Tooltip>
+                  </span>
+                </Button>
+              }              
             </div>
             <div style={{ display: 'flex', flex: 1, }}>
-              <VerPuesto _usuario={_usuario} Server={Server} id_puesto={puesto_edicion.id_puesto} getPuestos={this.getPuestos.bind(this)} />
+              <VerPuesto accesos={this.props.accesos} _usuario={_usuario} Server={Server} id_puesto={puesto_edicion.id_puesto} getPuestos={this.getPuestos.bind(this)} />
             </div>
           </div>
         }

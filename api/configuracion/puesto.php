@@ -339,6 +339,8 @@ if($_GET[accion]=='cambiar_estado_soporte'){
 								b.id_modulo , b.modulo
 						FROM accion a 
 						INNER JOIN modulo b ON a.id_modulo = b.id_modulo
+						AND a.estado = 1
+						AND b.estado = 1
 						ORDER BY b.id_modulo";
 			$qTpm = mysqli_query($con, $strQuery);
 			$arr = array();

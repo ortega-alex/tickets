@@ -73,7 +73,7 @@ class ver_puesto extends Component {
               </div>
             </div>
 
-            <Tabs activeKey={String(active_tab)} defaultActiveKey={"1"} onChange={(key) => { this.setState({ active_tab: key }) }} style={{ display: 'flex', flex: 1, height: '100%', width: '100%', flexDirection: 'column', }} >
+            <Tabs activeKey={String(active_tab)} defaultActiveKey={"1"} onChange={(key) => { this.setState({ active_tab: key }) }} style={{ display: 'flex', flex: 1, height: '100%', width: '750px', flexDirection: 'column', }} >
               {(tickets_all !== []) &&
                 <TabPane tab="Tickets" key="1">
                   <PerfilTickets _usuario={_usuario} moveraSoporte={this.moveraSoporte.bind(this)} id_usuario={id_usuario} tickets_all={tickets_all} Server={Server} />

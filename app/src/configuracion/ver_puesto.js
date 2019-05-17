@@ -36,46 +36,50 @@ class ver_puesto extends Component {
                 {(this.state.puesto !== undefined) && this.state.puesto.puesto}
               </h2>
               <div style={{ display: 'flex', flexDirection: 'row' }}>
-                <FormItem
-                  style={{ display: 'flex', justifyContent: 'flex-end', marginRight: 20 }}
-                  label={(
-                    <span>
-                      Activo&nbsp;
-                      <Tooltip title="Si desactivas un puesto, sus usuarios pertenecientes no podrán crear tickets.">
-                        <Icon type="question-circle-o" />
-                      </Tooltip>
-                    </span>
-                  )}
-                >
-                  <Switch loading={this.state.cargando} defaultChecked={this.state.puesto.estado == 1 ? true : false} onChange={(valor) => { this.cambiarEstadoPuesto(valor) }} />
-                </FormItem>
-                <FormItem
-                  style={{ display: 'flex', justifyContent: 'flex-end' }}
-                  label={(
-                    <span>
-                      Soporte&nbsp;
-                      <Tooltip title="Permitir a este puesto brindar soporte (despachar tickets).">
-                        <Icon type="question-circle-o" />
-                      </Tooltip>
-                    </span>
-                  )}
-                >
-                  <Switch loading={this.state.cargando} defaultChecked={parseInt(this.state.puesto.soporte) == 1 ? true : false} onChange={(valor) => { this.cambiarEstadoPuestoSoporte(valor) }} />
-                </FormItem>
+                {this.props.accesos['Activar/Desactivar_Puesto'] &&
+                  <FormItem
+                    style={{ display: 'flex', justifyContent: 'flex-end', marginRight: 20 }}
+                    label={(
+                      <span>
+                        Activo&nbsp;
+                        <Tooltip title="Si desactivas un puesto, sus usuarios pertenecientes no podrán crear tickets.">
+                          <Icon type="question-circle-o" />
+                        </Tooltip>
+                      </span>
+                    )}
+                  >
+                    <Switch loading={this.state.cargando} defaultChecked={this.state.puesto.estado == 1 ? true : false} onChange={(valor) => { this.cambiarEstadoPuesto(valor) }} />
+                  </FormItem>
+                }
+                {this.props.accesos['Activar/Desactivar_Puesto_Como_Soporte'] &&
+                  <FormItem
+                    style={{ display: 'flex', justifyContent: 'flex-end' }}
+                    label={(
+                      <span>
+                        Soporte&nbsp;
+                        <Tooltip title="Permitir a este puesto brindar soporte (despachar tickets).">
+                          <Icon type="question-circle-o" />
+                        </Tooltip>
+                      </span>
+                    )}
+                  >
+                    <Switch loading={this.state.cargando} defaultChecked={parseInt(this.state.puesto.soporte) == 1 ? true : false} onChange={(valor) => { this.cambiarEstadoPuestoSoporte(valor) }} />
+                  </FormItem>
+                }
               </div>
             </div>
             <Tabs defaultActiveKey="1" style={{ display: 'flex', flex: 1, height: '100%', width: '900px', flexDirection: 'column', }}>
               {(this.state.tickets_all !== []) &&
                 <TabPane tab="Perfil Tickets" key="1">
-                  <PerfilTickets _usuario={this.props._usuario} getPuestos={this.props.getPuestos.bind(this)} puesto={this.state.puesto} id_puesto={this.props.id_puesto} tickets_all={this.state.tickets_all} Server={this.props.Server} />
+                  <PerfilTickets accesos={this.props.accesos} _usuario={this.props._usuario} getPuestos={this.props.getPuestos.bind(this)} puesto={this.state.puesto} id_puesto={this.props.id_puesto} tickets_all={this.state.tickets_all} Server={this.props.Server} />
                 </TabPane>
               }
               <TabPane tab="Perfil Permisos" key="2">
-                <PerfilPermisos _usuario={this.props._usuario} puesto={this.state.puesto} Server={this.props.Server} />
+                <PerfilPermisos accesos={this.props.accesos} _usuario={this.props._usuario} puesto={this.state.puesto} Server={this.props.Server} />
               </TabPane>
               {(parseInt(this.state.puesto.soporte) == 1) &&
                 <TabPane tab="Soporte" key="3">
-                  <PerfilTicketsSoportePuesto _usuario={this.props._usuario} puesto={this.state.puesto} id_puesto={this.props.id_puesto} tickets_all={this.state.tickets_all} Server={this.props.Server} />
+                  <PerfilTicketsSoportePuesto accesos={this.props.accesos} _usuario={this.props._usuario} puesto={this.state.puesto} id_puesto={this.props.id_puesto} tickets_all={this.state.tickets_all} Server={this.props.Server} />
                 </TabPane>
               }
             </Tabs>
@@ -94,8 +98,8 @@ class ver_puesto extends Component {
     var data = new FormData();
     data.append('id_puesto', this.props.id_puesto);
     data.append('estado', cambiar_a);
-    data.append('puesto' , this.state.puesto.puesto);
-    data.append('_usuario' , this.props._usuario);
+    data.append('puesto', this.state.puesto.puesto);
+    data.append('_usuario', this.props._usuario);
 
     http._POST(Server + 'configuracion/puesto.php?accion=cambiar_estado_soporte', data).then(res => {
       if (res !== 'error') {
@@ -121,8 +125,8 @@ class ver_puesto extends Component {
     var data = new FormData();
     data.append('id_puesto', this.props.id_puesto);
     data.append('estado', cambiar_a);
-    data.append('puesto' , this.state.puesto.puesto);
-    data.append('_usuario' , this.props._usuario);
+    data.append('puesto', this.state.puesto.puesto);
+    data.append('_usuario', this.props._usuario);
 
     http._POST(Server + 'configuracion/puesto.php?accion=estado', data).then(res => {
       if (res !== 'error') {
@@ -258,10 +262,10 @@ class PerfilPermisos extends Component {
     this.state = {
       cargando: false,
       perfil_permisos: [],
-      activos: [] ,
-      cambios: false ,
+      activos: [],
+      cambios: false,
       actualizar: false
-    }     
+    }
   }
 
   componentDidMount() {
@@ -269,7 +273,7 @@ class PerfilPermisos extends Component {
   }
 
   render() {
-    const { perfil_permisos, activos , cambios } = this.state;
+    const { perfil_permisos, activos, cambios } = this.state;
     return (
       <div style={{ display: 'flex', flex: 1, flexDirection: 'column', height: '297px', }}>
         <Layout style={{ height: '90%', flexDirection: 'row', backgroundColor: 'white', }}>
@@ -281,7 +285,7 @@ class PerfilPermisos extends Component {
           </Layout>
           <Layout style={{ height: '90%', width: '20px', overflowY: 'auto', backgroundColor: 'white', padding: '10px', marginLeft: 40 }}>
             <h4>Perfil de permisos (módulos del sistema).</h4>
-            { perfil_permisos.length > 0 ?
+            {perfil_permisos.length > 0 ?
               <Layout style={{ height: '60%', flexDirection: 'row', backgroundColor: 'white', }}>
                 <Tree
                   checkable
@@ -292,7 +296,7 @@ class PerfilPermisos extends Component {
                   onCheck={this.onCheck}
                 >
                   {Object.values(perfil_permisos).map((item, index) => (
-                    <TreeNode title={Object.keys(item)} key={"modulo" + Object.keys(item) + index} selectable={false} >
+                    <TreeNode title={Object.keys(item).toString().replace(/_/g, ' ')} key={"modulo" + Object.keys(item) + index} selectable={false} >
                       {Object.values(item[Object.keys(item)]).map((acc) => (
                         <TreeNode title={acc.accion.replace(/_/g, ' ')} key={acc.id_accion} selectable={false} />
                       ))}
@@ -311,7 +315,7 @@ class PerfilPermisos extends Component {
         <Layout>
         </Layout>
         <div style={{ display: 'flex', flexDirection: 'row', height: '10%', alignItems: 'center', justifyContent: 'flex-end' }}>
-          {(this.props.puesto) &&
+          {(this.props.puesto && this.props.accesos['Actualizar_Perfil_Permisos']) &&
             <div style={{ display: 'flex', flex: 1, width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <span>
@@ -325,9 +329,11 @@ class PerfilPermisos extends Component {
               </div>
             </div>
           }
-          <Button onClick={this.guardarPerfil.bind(this)} disabled={!cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
-            Guardar Cambios
-          </Button>
+          {this.props.accesos['Guardar_Perfil_Permisos'] &&
+            <Button onClick={this.guardarPerfil.bind(this)} disabled={!cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
+              Guardar Cambios
+            </Button>
+          }
         </div>
       </div>
     )
@@ -339,8 +345,8 @@ class PerfilPermisos extends Component {
     http._GET(Server + "configuracion/puesto.php?accion=get_perfil_permisos&id_puesto=" + puesto["id_puesto"]).then(res => {
       if (res["err"] == "false") {
         this.setState({
-          perfil_permisos: res['perfil_permisos'] ,
-          activos : res['activos']
+          perfil_permisos: res['perfil_permisos'],
+          activos: res['activos']
         });
       } else {
         message.error(res["mns"]);
@@ -361,7 +367,7 @@ class PerfilPermisos extends Component {
         )
       }
     }
-    this.setState({ activos: resultado , cambios : true});
+    this.setState({ activos: resultado, cambios: true });
   }
 
   tiene_letras(texto) {
@@ -375,19 +381,19 @@ class PerfilPermisos extends Component {
     return false;
   }
 
-  guardarPerfil(){
-    const { puesto , Server , _usuario } = this.props;
-    const { activos , actualizar  } = this.state;
-    this.setState({ cargando: true , cambios : false});
+  guardarPerfil() {
+    const { puesto, Server, _usuario } = this.props;
+    const { activos, actualizar } = this.state;
+    this.setState({ cargando: true, cambios: false });
     var todos = (actualizar == true) ? 1 : 0;
     var data = new FormData();
-    data.append('id_perfil_permisos' , puesto["id_perfil_permisos"]);
-    data.append('activos' , activos.toString());
-    data.append('actualizar' , todos);    
-    data.append('puesto' , puesto.puesto);
-    data.append('_usuario' , _usuario);
-    
-    http._POST(Server + 'configuracion/puesto.php?accion=guardar_perfil_permisos' , data).then(res => {
+    data.append('id_perfil_permisos', puesto["id_perfil_permisos"]);
+    data.append('activos', activos.toString());
+    data.append('actualizar', todos);
+    data.append('puesto', puesto.puesto);
+    data.append('_usuario', _usuario);
+
+    http._POST(Server + 'configuracion/puesto.php?accion=guardar_perfil_permisos', data).then(res => {
       message.info(res.mns);
     }).catch(err => {
       message.error("Error al guardar perfil puesto." + err);
@@ -407,7 +413,7 @@ class PerfilTickets extends Component {
       cargando: false,
       cambios: false,
       actualizar: false,
-    }   
+    }
   }
 
   componentDidMount() {
@@ -465,8 +471,9 @@ class PerfilTickets extends Component {
         <Layout>
         </Layout>
         <div style={{ display: 'flex', flexDirection: 'row', height: '10%', alignItems: 'center', justifyContent: 'flex-end' }}>
-          {(this.props.puesto) &&
+          {(this.props.puesto && this.props.accesos['Actualizar_Perfil_Tickets']) &&
             <div style={{ display: 'flex', flex: 1, width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              {/* 
               <div style={{ marginRight: 20, alignItems: 'center', justifyContent: 'center' }}>
                 <span>
                   Limitar a Selección&nbsp;
@@ -476,7 +483,7 @@ class PerfilTickets extends Component {
                   &nbsp;
                  </span>
                 <Switch size="small" defaultChecked={this.props.puesto.limitar_tickets == '1' ? true : false} onChange={(valor) => { this.setState({ frm_activo_aplicar_todos: valor, cambios: true }) }} />
-              </div>
+              </div>*/}
               <div style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <span>
                   Actualizar&nbsp;
@@ -489,9 +496,11 @@ class PerfilTickets extends Component {
               </div>
             </div>
           }
-          <Button onClick={this.guardarPerfilTickets.bind(this)} disabled={!this.state.cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
-            Guardar Cambios
-          </Button>
+          {this.props.accesos['Guardar_Perfil_Tickets'] &&
+            <Button onClick={this.guardarPerfilTickets.bind(this)} disabled={!this.state.cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
+              Guardar Cambios
+            </Button>
+          }
         </div>
       </div>
     )
@@ -519,16 +528,16 @@ class PerfilTickets extends Component {
     data.append('id_puesto', this.props.id_puesto);
     data.append('perfil', JSON.stringify(this.state.tickets_seleccionadas));
     data.append('limitar', estado);
-    data.append('puesto' , this.props.puesto.puesto);
-    data.append('_usuario' , this.props._usuario);
-    var update = ( this.state.actualizar == true) ? 1 : 0;
-    data.append('actualizar' , update);
+    data.append('puesto', this.props.puesto.puesto);
+    data.append('_usuario', this.props._usuario);
+    var update = (this.state.actualizar == true) ? 1 : 0;
+    data.append('actualizar', update);
 
     http._POST(Server + 'configuracion/puesto.php?accion=guardar_perfil', data).then(res => {
       if (res !== 'error') {
         this.setState({ cargando: false, cambios: false });
         message.info("Perfil actualizado correctamente.");
-        this.props.getPuestos();      
+        this.props.getPuestos();
       } else {
         message.error("Error al actualizar perfil.");
         this.setState({ cargando: false, cambios: true });
@@ -538,7 +547,7 @@ class PerfilTickets extends Component {
       this.setState({ cargando: false, cambios: true });
     });
   }
-  
+
   tiene_letras(texto) {
     var letras = "abcdefghyjklmnñopqrstuvwxyz";
     texto = texto.toLowerCase();
@@ -600,10 +609,10 @@ class PerfilTicketsSoportePuesto extends Component {
           tabPosition={"left"}
         >
           <TabPane tab={"GLOBAL"} key={"0"}>
-            <TicketsSoportePuesto tipo={'global'} Server={this.props.Server} id_puesto={this.props.id_puesto} tickets_all={this.props.tickets_all} _usuario={this.props._usuario} />
-            </TabPane>
+            <TicketsSoportePuesto accesos={this.props.accesos} tipo={'global'} Server={this.props.Server} id_puesto={this.props.id_puesto} tickets_all={this.props.tickets_all} _usuario={this.props._usuario} />
+          </TabPane>
           <TabPane tab={this.props.puesto.puesto} key={"1"}>
-            <TicketsSoportePuesto tipo={'puesto'} Server={this.props.Server} id_puesto={this.props.id_puesto} tickets_all={this.props.tickets_all} _usuario={this.props._usuario} />
+            <TicketsSoportePuesto accesos={this.props.accesos} tipo={'puesto'} Server={this.props.Server} id_puesto={this.props.id_puesto} tickets_all={this.props.tickets_all} _usuario={this.props._usuario} />
           </TabPane>
         </Tabs>
       </div>

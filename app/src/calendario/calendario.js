@@ -6,8 +6,8 @@ import PestaniaTicketsUsuario from "../inicio/vistas_ticket/pestania_tickets_usu
 const id_usuario = '3';
 class inicio extends Component {
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       fecha: undefined,
     }
@@ -26,7 +26,7 @@ class inicio extends Component {
       <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%', overflowY: 'hidden' }}>
         <div style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '70%', height: '100%' }}>
           {fecha &&
-            <PestaniaTicketsUsuario fecha={fecha} Server={Server} id_usuario={id_usuario} modalidad='tickets_abiertas_soporte' />
+            <PestaniaTicketsUsuario fecha={fecha} Server={Server} id_usuario={id_usuario} modalidad='tickets_abiertas_soporte' rol={this.props.rol} />
           }
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

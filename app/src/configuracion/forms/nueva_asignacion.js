@@ -18,6 +18,7 @@ class nueva_asignacion extends Component {
       check_asignacion_activa: true,
       nuevo_actualizar_permisos: true,
     }
+    console.log(this.props);
   }
 
   componentDidMount() {
@@ -64,7 +65,7 @@ class nueva_asignacion extends Component {
                     onChange={(seleccion) => { this.setState({ asignacion_departamento: seleccion }) }}
                     filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   >
-                    {this.state.departamentos.map((departamento) => (
+                    { this.state.departamentos.map((departamento) => (
                       <Option value={departamento.id_departamento}>{String(departamento.departamento)}</Option>
                     ))}
                   </Select>
@@ -80,7 +81,7 @@ class nueva_asignacion extends Component {
                 wrapperCol={{ span: 12 }}
               >
                 {getFieldDecorator('usuario', {
-                  rules: [{ required: true, message: 'Por favor selecciona un usuario!' }], initialValue: (this.props.id_usuario ? String(this.props.id_usuario) : undefined)
+                  rules: [{ required: true, message: 'Por favor selecciona un usuario!' }], initialValue: (this.props.edit_asignacion_usuario ? String(this.props.edit_asignacion_usuario.id_usuario) : undefined)
                 })(
                   <Select
                     showSearch
@@ -91,8 +92,8 @@ class nueva_asignacion extends Component {
                     onChange={(seleccion) => { this.setState({ asignacion_usuario: seleccion }) }}
                     filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   >
-                    {this.state.usuarios.map((usuario) => (
-                      <Option value={usuario.id_usuario}>{String(usuario.nombre_completo) + " @" + String(usuario.username)}</Option>
+                    {this.state.usuarios.map((usuario , i) => (
+                      <Option key={i} value={usuario.id_usuario}>{String(usuario.nombre_completo) + " @" + String(usuario.username)}</Option>
                     ))}
                   </Select>
                 )}
@@ -107,7 +108,7 @@ class nueva_asignacion extends Component {
                 wrapperCol={{ span: 12 }}
               >
                 {getFieldDecorator('puesto', {
-                  rules: [{ required: true, message: 'Por favor selecciona un puesto!' }],
+                  rules: [{ required: true, message: 'Por favor selecciona un puesto!' }] , initialValue: (this.props.edit_asignacion_usuario ? String(this.props.edit_asignacion_usuario.id_puesto) : undefined)
                 })(
                   <Select
                     showSearch
@@ -118,8 +119,8 @@ class nueva_asignacion extends Component {
                     onChange={(seleccion) => { this.setState({ asignacion_puesto: seleccion }) }}
                     filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   >
-                    {this.state.puestos.map((puesto) => (
-                      <Option value={puesto.id_puesto}>{puesto.puesto}</Option>
+                    {this.state.puestos.map((puesto , i) => (
+                      <Option key={i} value={puesto.id_puesto}>{puesto.puesto}</Option>
                     ))}
                   </Select>
                 )}
@@ -132,14 +133,19 @@ class nueva_asignacion extends Component {
                 label={(
                   <span>
                     Activo&nbsp;
-                  <Tooltip title="Puedes inactivar el puesto asignado de un usuario.">
+                    <Tooltip title="Puedes inactivar el puesto asignado de un usuario.">
                       <Icon type="question-circle-o" />
                     </Tooltip>
                   </span>
                 )}
               >
                 {getFieldDecorator('activo', { rules: [{ required: false, message: "hola" }] })(
-                  <Switch defaultChecked={this.state.check_asignacion_activa} onChange={(valor) => { this.setState({ check_asignacion_activa: valor }) }} />
+                  <Switch 
+                    defaultChecked = { (this.edit_asignacion_usuario) ? this.edit_asignacion_usuario.estado : this.state.check_asignacion_activa } 
+                    onChange={(valor) => { 
+                      this.setState({ check_asignacion_activa: valor }) 
+                    }} 
+                  />
                 )}
               </FormItem>
 
@@ -148,7 +154,7 @@ class nueva_asignacion extends Component {
                 label={(
                   <span>
                     Aplicar Perfil&nbsp;
-                  <Tooltip title="Se aplicará perfil de tickets correspondiente a este puesto.">
+                    <Tooltip title="Se aplicará perfil de tickets correspondiente a este puesto.">
                       <Icon type="question-circle-o" />
                     </Tooltip>
                   </span>
@@ -163,8 +169,8 @@ class nueva_asignacion extends Component {
 
           <div style={{ display: 'flex', height: "10%", width: '100%', justifyContent: 'center' }}>
             <Button disabled={this.state.cargando} type="primary" htmlType="submit" style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
-              Crear Asignación
-          </Button>
+              { (this.props.edit_asignacion_usuario) ? "Editar" : "Crear" }&nbsp;Asignación
+            </Button>
           </div>
         </Form>
       </div>
@@ -179,7 +185,7 @@ class nueva_asignacion extends Component {
         let Server = String(this.props.Server);
 
         var estado = (this.state.check_asignacion_activa) ? '1' : '0';
-        var nuevo_actualizar_permisos = (this.state.nuevo_actualizar_permisos) ? '1' : '0';
+        var nuevo_actualizar_permisos = (this.state.nuevo_actualizar_permisos) ? '1' : '0';      
 
         var data = new FormData();
         data.append('usuario', values.usuario);
@@ -188,6 +194,10 @@ class nueva_asignacion extends Component {
         data.append('departamento', values.departamento);
         data.append('nuevo_actualizar_permisos', nuevo_actualizar_permisos);
         data.append('_usuario' , this.props._usuario);
+        if ( this.props.edit_asignacion_usuario ) {
+          data.append('edit' , 1);
+          data.append('id_cargo' , this.props.edit_asignacion_usuario.id_cargo);
+        }       
 
         http._POST(Server + 'configuracion/usuario.php?accion=asignar', data).then((res) => {
           if (res !== 'error') {
@@ -231,10 +241,10 @@ class nueva_asignacion extends Component {
   }
 
   getDepartamentos() {
-    let Server = String(this.props.Server);
+    const { Server , rol , _usuario } = this.props;
     this.setState({ cargando: true });
 
-    http._GET(Server + 'configuracion/departamento.php?accion=get').then((res) => {
+    http._GET(Server + 'configuracion/departamento.php?accion=get&rol='+rol+"&_usuario="+_usuario).then(res => {
       if (res !== 'error') {
         this.setState({ departamentos: res });
         this.setState({ cargando: false });

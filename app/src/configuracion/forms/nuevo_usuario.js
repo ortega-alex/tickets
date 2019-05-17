@@ -73,7 +73,8 @@ class nuevo_usuario extends Component {
             </FormItem>
             <FormItem label="Confirmar contr."
               {...formItemLayout}>
-              {getFieldDecorator('pass_confirm', { rules: [{ required: true, message: 'Por favor confirma tu contraseña.' }, { validator: this.compareToFirstPassword }], initialValue: (this.props.usuario_edicion ? String(this.props.usuario_edicion.password) : undefined) })(
+              {getFieldDecorator('pass_confirm', { 
+                rules: [{ required: true, message: 'Por favor confirma tu contraseña.' }, { validator: this.compareToFirstPassword }], initialValue: (this.props.usuario_edicion ? String(this.props.usuario_edicion.password) : undefined) })(
                 <Input type="password" prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Confirma Contraseña" />
               )}
             </FormItem>
@@ -112,7 +113,12 @@ class nuevo_usuario extends Component {
               )}
             >
               {getFieldDecorator('activo', { rules: [{ required: false, message: "hola" }] })(
-                <Switch defaultChecked={this.state.nuevo_usuario_activo} onChange={(valor) => { this.setState({ nuevo_usuario_activo: valor }) }} />
+                <Switch 
+                  defaultChecked={this.state.nuevo_usuario_activo} 
+                  onChange={(valor) => { 
+                    this.setState({ nuevo_usuario_activo: valor }) 
+                  }} 
+                />
               )}
             </FormItem>
           </div>

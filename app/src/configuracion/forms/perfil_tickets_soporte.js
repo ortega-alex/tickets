@@ -56,28 +56,32 @@ class tickets_soporte extends Component {
           }
         </Layout>
         <div style={{ display: 'flex', flexDirection: 'row', height: '10%', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <div style={{ alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
-            {this.props.tipo === 'puesto' &&
-              <span>
-                Actualizar Puestos de Usuarios&nbsp;
-                <Tooltip title="Se actualizará el perfil en cada asignación del puesto. Ello implica reemplazar el perfil anterior por el nuevo.">
-                  <Icon type="question-circle-o" />
-                </Tooltip> &nbsp;
-              </span>
-            }
-            {this.props.tipo === 'global' &&
-              <span>
-                Actualizar Usuarios&nbsp;
-                <Tooltip title="Se agregarán tickets de soporte globales a usuarios. El perfil existente no será reemplazado en cada usuario, sólo se agregarán tickets no existentes.">
-                  <Icon type="question-circle-o" />
-                </Tooltip> &nbsp;
-              </span>
-            }
-            <Switch size="small" defaultChecked={this.state.actualizar} onChange={(valor) => { this.setState({ actualizar: valor, cambios: true }) }} />
-          </div>
+        { this.props.accesos['Actualizar_Perfil_Soporte'] &&            
+           <div style={{ alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+             {this.props.tipo === 'puesto' &&
+               <span>
+                 Actualizar Puestos de Usuarios&nbsp;
+                 <Tooltip title="Se actualizará el perfil en cada asignación del puesto. Ello implica reemplazar el perfil anterior por el nuevo.">
+                   <Icon type="question-circle-o" />
+                 </Tooltip> &nbsp;
+               </span>
+             }
+             {this.props.tipo === 'global' &&
+               <span>
+                 Actualizar Usuarios&nbsp;
+                 <Tooltip title="Se agregarán tickets de soporte globales a usuarios. El perfil existente no será reemplazado en cada usuario, sólo se agregarán tickets no existentes.">
+                   <Icon type="question-circle-o" />
+                 </Tooltip> &nbsp;
+               </span>
+             }
+             <Switch size="small" defaultChecked={this.state.actualizar} onChange={(valor) => { this.setState({ actualizar: valor, cambios: true }) }} />
+           </div>
+        }  
+        { this.props.accesos['Guardar_Perfil_Soporte'] &&       
           <Button onClick={this.guardarPerfilTicketsSoporte.bind(this)} disabled={!this.state.cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
             Guardar Cambios
           </Button>
+        }
         </div>
       </div>
     )

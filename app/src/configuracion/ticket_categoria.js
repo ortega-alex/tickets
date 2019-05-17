@@ -44,28 +44,35 @@ class ver_puesto extends Component {
         <div style={{ display: 'flex', flex: 1, flexDirection: 'row', width: '100%', justifyContent: 'flex-end' }}>
           <div style={{ display: 'flex', flexDirection: 'column', width: '15%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'row', }}>
-              <Button
-                onClick={this.solicitarEdicionCat.bind(this)}
-                style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none', marginRight: 5 }}
-              >
-                <span>
-                  <Tooltip title="Editar esta Categoría" placement="left">
-                    <Icon type="edit" style={{ color: '#89ADC5', fontSize: 20, marginLeft: 5 }} />
-                  </Tooltip>
-                </span>
-              </Button>
-              <span>
-                Activa:&nbsp;
-                <Tooltip title="Si inactivas una Categoría los usuarios no podrán hacer uso de todas sus tickets">
-                  <Icon type="question-circle-o" />
-                </Tooltip>
-                &nbsp;
-              </span>
-              <Tooltip title={this.props.categoria.estado_final.directo == "No" ? ("Acción no permitida! " + this.props.categoria.estado_final.motivo) : 'Activar/Desactivar'} placement='right'>
+             { this.props.accesos['Editar_Categoria'] &&
+                <Button
+                  onClick={this.solicitarEdicionCat.bind(this)}
+                  style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none', marginRight: 5 }}
+                >
+                  <span>
+                    <Tooltip title="Editar esta Categoría" placement="left">
+                      <Icon type="edit" style={{ color: '#89ADC5', fontSize: 20, marginLeft: 5 }} />
+                    </Tooltip>
+                  </span>
+                </Button>
+              }  
+              { this.props.accesos['Adctivar/Desactivar_Categoria'] &&
                 <div>
-                  <Switch loading={this.state.cargando} defaultChecked={this.props.categoria.estado_final.estado == 'Inactivo' ? false : true} disabled={!(this.props.categoria.estado_final.directo == "No" ? false : true)} onChange={(valor) => { this.cambiarEstadoCategoria(valor) }} />
+                  <span>
+                    Activa:&nbsp;
+                    <Tooltip title="Si inactivas una Categoría los usuarios no podrán hacer uso de todas sus tickets">
+                      <Icon type="question-circle-o" />
+                    </Tooltip>
+                    &nbsp;
+                  </span>
+                  <Tooltip title={this.props.categoria.estado_final.directo == "No" ? ("Acción no permitida! " + this.props.categoria.estado_final.motivo) : 'Activar/Desactivar'} placement='right'>
+                    <div>
+                      <Switch loading={this.state.cargando} defaultChecked={this.props.categoria.estado_final.estado == 'Inactivo' ? false : true} disabled={!(this.props.categoria.estado_final.directo == "No" ? false : true)} onChange={(valor) => { this.cambiarEstadoCategoria(valor) }} />
+                    </div>
+                  </Tooltip>
                 </div>
-              </Tooltip>
+              }            
+              
             </div>
             {(this.props.categoria.estado_final.motivo !== 'Activo') &&
               <div style={{ marginLeft: 43, fontSize: 10, width: '100%' }}>
@@ -93,11 +100,13 @@ class ver_puesto extends Component {
                 </RadioButton>
               ))}
             </RadioGroup>
-            <Tooltip title="Nueva sub categoría">
-              <Button onClick={this.solicito_nuevaSub.bind(this)} type="dashed" htmlType="button" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: 5 }}>
-                <Icon type="plus-circle" style={{ fontSize: 16, color: "#8F8F8F" }} />
-              </Button>
-            </Tooltip>
+            { this.props.accesos['Nueva_Sub_Categoria'] &&
+              <Tooltip title="Nueva sub categoría">
+                <Button onClick={this.solicito_nuevaSub.bind(this)} type="dashed" htmlType="button" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: 5 }}>
+                  <Icon type="plus-circle" style={{ fontSize: 16, color: "#8F8F8F" }} />
+                </Button>
+              </Tooltip>
+            }           
           </div>
         </div>
         <div style={{ display: 'flex', flex: 1, height: 45, flexDirection: 'row', width: '100%', justifyContent: 'flex-end', marginTop: 10 }}>
@@ -115,22 +124,26 @@ class ver_puesto extends Component {
                     </span>
                   )}
                 >
+                { this.props.accesos['Adctivar/Desactivar_Sub_Categoria'] && 
                   <Tooltip title={this.state.sub_categoria_edicion.estado_final.directo == "No" ? ("Acción no permitida! " + this.state.sub_categoria_edicion.estado_final.motivo) : 'Activar/Desactivar'} placement='right'>
                     <div>
                       <Switch loading={this.state.cargando} size="small" defaultChecked={this.state.sub_categoria_edicion.estado_final.estado == "Inactivo" ? false : true} disabled={!(this.state.sub_categoria_edicion.estado_final.directo == "No" ? false : true)} onChange={(valor) => { this.cambiarEstadoSubCat(valor) }} />
                     </div>
                   </Tooltip>
+                }                  
                 </FormItem>
-                <Button
-                  onClick={this.solicitarEdicionSubCat.bind(this)}
-                  style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none', marginTop: 10 }}
-                >
-                  <span>
-                    <Tooltip title="Editar esta Sub-Categoría" placement="left">
-                      <Icon type="edit" style={{ color: '#89ADC5', fontSize: 20, marginLeft: 5 }} />
-                    </Tooltip>
-                  </span>
-                </Button>
+                { this.props.accesos['Editar_Sub_Categoria'] && 
+                  <Button
+                    onClick={this.solicitarEdicionSubCat.bind(this)}
+                    style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none', marginTop: 10 }}
+                  >
+                    <span>
+                      <Tooltip title="Editar esta Sub-Categoría" placement="left">
+                        <Icon type="edit" style={{ color: '#89ADC5', fontSize: 20, marginLeft: 5 }} />
+                      </Tooltip>
+                    </span>
+                  </Button>
+                }               
               </div>
               {(this.state.sub_categoria_edicion.estado_final.motivo !== 'Activo') &&
                 <div style={{ marginRight: 60, fontSize: 10, width: '100%' }}>
@@ -142,18 +155,20 @@ class ver_puesto extends Component {
         </div>
         <div style={{ display: 'flex', flex: 1, height: '100%', width: '100%', paddingLeft: '20px', paddingRight: '20px' }}>
           <Grid container columns={3} padded stackable>
-            <Grid.Column>
-              <Button
-                type="dashed"
-                onClick={() => { this.solicito_nuevaTicket() }}
-                style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '250px', height: '100px', alignItems: 'center', justifyContent: 'center' ,  border: 'solid' ,  borderStyle: 'dashed'}}
-              >
-                <Icon type="plus-circle" style={{ fontSize: 35, marginTop: 10 }} />
-                <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap', fontSize: 15, marginTop: 5 }}>
-                  <b>Nuevo Ticket</b>
-              </div>
-              </Button>
-            </Grid.Column>
+            { this.props.accesos['Nuevo_Ticket'] && 
+              <Grid.Column>
+                <Button
+                  type="dashed"
+                  onClick={() => { this.solicito_nuevaTicket() }}
+                  style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '250px', height: '100px', alignItems: 'center', justifyContent: 'center' ,  border: 'solid' ,  borderStyle: 'dashed'}}
+                >
+                  <Icon type="plus-circle" style={{ fontSize: 35, marginTop: 10 }} />
+                  <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap', fontSize: 15, marginTop: 5 }}>
+                    <b>Nuevo Ticket</b>
+                </div>
+                </Button>
+              </Grid.Column>
+            }           
             {this.state.tickets_resultado.map((ticket, i) => (
               <Grid.Column key={i}>
                 <ItemTicket ticket={ticket} visualizarTicket={this.visualizarTicket.bind(this)} />
@@ -542,35 +557,39 @@ class ver_puesto extends Component {
           <div style={{ width: '100%', height: '100%' }}>
             <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '20%', justifyContent: 'center', }}>
               <div style={{ display: 'flex', flexDirection: 'row', textAlign: 'center', alignItems: 'center', justifyContent: 'center', whiteSpace: 'pre-wrap', lineHeight: 0 }}>
-                <Button
-                  onClick={this.solicitarEdicionTicket.bind(this)}
-                  style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
-                >
-                  <span>
-                    <Tooltip title="Editar Ticket">
-                      <Icon type="edit" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
-                    </Tooltip>
-                  </span>
-                </Button>
+                { this.props.accesos['Editar_Ticket'] && 
+                  <Button
+                    onClick={this.solicitarEdicionTicket.bind(this)}
+                    style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
+                  >
+                    <span>
+                      <Tooltip title="Editar Ticket">
+                        <Icon type="edit" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
+                      </Tooltip>
+                    </span>
+                  </Button>
+                }                
                 <div style={{ display: 'flex', flex: 1, marginRight: -30, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                   {(this.state.ticket_edicion != undefined) && <h2 style={{ textAlign: 'center' }}>{this.state.ticket_edicion.nombre_ticket}</h2>}
                   {(this.state.ticket_edicion != undefined) && <div style={{ textAlign: 'center' }}>{this.state.ticket_edicion.categoria.categoria}>{this.state.ticket_edicion.sub_categoria.sub_categoria}</div>}
                 </div>
-                <FormItem
-                  style={{ display: 'flex', justifyContent: 'flex-end', marginRight: 30, marginTop: 30, color: 'red' }}
-                  label={(
-                    <span>
-                      Activa&nbsp;
-                        <Tooltip title="Si inactivas una ticket los usuarios no podrán hacer uso de ella">
-                        <Icon type="question-circle-o" />
-                      </Tooltip>
-                    </span>
-                  )}
-                >
-                  {getFieldDecorator('activo', { rules: [{ required: false, }] })(
-                    <Switch loading={this.state.cargando} defaultChecked={this.state.ticket_edicion.estado == 1 ? true : false} onChange={(valor) => { this.cambiarEstadoTicket(valor) }} />
-                  )}
-                </FormItem>
+                { this.props.accesos['Activar/Desactivar_Ticket'] &&
+                  <FormItem
+                    style={{ display: 'flex', justifyContent: 'flex-end', marginRight: 30, marginTop: 30, color: 'red' }}
+                    label={(
+                      <span>
+                        Activa&nbsp;
+                          <Tooltip title="Si inactivas una ticket los usuarios no podrán hacer uso de ella">
+                          <Icon type="question-circle-o" />
+                        </Tooltip>
+                      </span>
+                    )}
+                  >
+                    {getFieldDecorator('activo', { rules: [{ required: false, }] })(
+                      <Switch loading={this.state.cargando} defaultChecked={this.state.ticket_edicion.estado == 1 ? true : false} onChange={(valor) => { this.cambiarEstadoTicket(valor) }} />
+                    )}
+                  </FormItem>
+                }               
               </div>
               <Divider />
             </div>

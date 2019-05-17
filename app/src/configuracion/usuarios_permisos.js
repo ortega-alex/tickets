@@ -8,6 +8,8 @@ import { AgGridReact, AgGridColumn } from 'ag-grid-react';
 import http from '../services/http.services';
 
 var moment = require('moment');
+require("moment/min/locales.min");
+moment.locale('es');
 
 class UsuarioPermisos extends Component {
 
@@ -20,7 +22,7 @@ class UsuarioPermisos extends Component {
     super(props);
     this.state = {
       usuarios: [],
-      roles: [] ,
+      roles: [],
       rol: undefined,
       modal_nuevoUsuario: false,
       usuario_ficha: undefined,
@@ -33,22 +35,24 @@ class UsuarioPermisos extends Component {
         {this.modalUsuario()}
         {this.modalNuevoUsuario()}
 
-        <div style={{ display: 'flex', width: '100%', flexDirection: 'column', height: '10%', alignItems: 'flex-end' }}>
-          <Tooltip title="Usuario Nuevo" placement="left">
-            <Button
-              type="button"
-              onClick={this.solicitar_nuevoUsuario.bind(this)}
-              style={{ backgroundColor: 'transparent', width: 40, border: 'none', borderColor: 'red', outline: 'none' }}
-            >
-              <Icon type="user-add" style={{ color: '#3498DB', fontSize: 20 }} />
-            </Button>
-          </Tooltip>
-        </div>
+        {this.props.accesos['Nuevo_Usuario'] &&
+          <div style={{ display: 'flex', width: '100%', flexDirection: 'column', height: '10%', alignItems: 'flex-end' }}>
+            <Tooltip title="Usuario Nuevo" placement="left">
+              <Button
+                type="button"
+                onClick={this.solicitar_nuevoUsuario.bind(this)}
+                style={{ backgroundColor: 'transparent', width: 40, border: 'none', borderColor: 'red', outline: 'none' }}
+              >
+                <Icon type="user-add" style={{ color: '#3498DB', fontSize: 20 }} />
+              </Button>
+            </Tooltip>
+          </div>
+        }
 
         <div style={{ textAlign: 'center' }}>
           <h3>Usuarios</h3>
           Se muestra el listado de usuarios del Sistema de Tickets.
-      </div>
+        </div>
 
         <div
           className="ag-theme-balham"
@@ -154,21 +158,27 @@ class UsuarioPermisos extends Component {
                 }
                 return (
                   <div style={{ display: 'flex', flexDirection: 'row', height: '25px', justifyContent: 'center', alignItems: 'center' }}>
-                    <Button
-                      type="button"
-                      onClick={() => { this.cargarUsuarioEdicion(param.value.id_usuario) }}
-                      style={{ backgroundColor: 'transparent', width: 40, border: 'none', borderColor: 'red', outline: 'none' }}
-                    >
-                      <Icon type="edit" style={{ color: '#B3B6B7', fontSize: 16 }} />
-                    </Button>
-                    <Tooltip title={motivo} placement='right'>
-                      <div>
-                        <Switch size="small" disabled={!directo} defaultChecked={activo} onChange={(valor) => { this.cambiarEstadoUsuario(param.value.id_usuario, valor) }} />
-                      </div>
-                    </Tooltip>
-                    <Button onClick={() => { this.verFicha(param.value) }} type="primary" htmlType="button" style={{ display: 'flex', marginLeft: 10, height: '70%', width: '55%', justifyContent: 'center', alignItems: 'center', fontSize: 10 }}>
-                      <Icon type="solution" style={{ color: 'white', fontSize: 10, }} /> Ficha
-                  </Button>
+                    {this.props.accesos['Editar_Usuario'] &&
+                      <Button
+                        type="button"
+                        onClick={() => { this.cargarUsuarioEdicion(param.value.id_usuario) }}
+                        style={{ backgroundColor: 'transparent', width: 40, border: 'none', borderColor: 'red', outline: 'none' }}
+                      >
+                        <Icon type="edit" style={{ color: '#B3B6B7', fontSize: 16 }} />
+                      </Button>
+                    }
+                    {this.props.accesos['Activar/Desactivar_Usuario'] &&
+                      <Tooltip title={motivo} placement='right'>
+                        <div>
+                          <Switch size="small" disabled={!directo} defaultChecked={activo} onChange={(valor) => { this.cambiarEstadoUsuario(param.value.id_usuario, valor) }} />
+                        </div>
+                      </Tooltip>
+                    }
+                    {this.props.accesos['Ficha_Usuario'] &&
+                      <Button onClick={() => { this.verFicha(param.value) }} type="primary" htmlType="button" style={{ display: 'flex', marginLeft: 10, height: '70%', width: '55%', justifyContent: 'center', alignItems: 'center', fontSize: 10 }}>
+                        <Icon type="solution" style={{ color: 'white', fontSize: 10, }} /> Ficha
+                      </Button>
+                    }
                   </div>
                 )
               }}
@@ -180,22 +190,22 @@ class UsuarioPermisos extends Component {
   }
 
   solicitar_nuevoUsuario() {
-    this.setState({ 
+    this.setState({
       usuario_edicion: undefined,
-      rol : undefined , 
-      modal_nuevoUsuario: true 
+      rol: undefined,
+      modal_nuevoUsuario: true
     });
   }
 
   modalUsuario() {
     const { modal_Usuario, usuario_ficha, id_usuario } = this.state;
-    const { Server , _usuario } = this.props;
+    const { Server, _usuario } = this.props;
     return (
       <Rodal
         animation={'slideUp'}
         visible={modal_Usuario}
         height={480}
-        width={700}
+        width={800}
         onClose={() => { this.setState({ modal_Usuario: !modal_Usuario, usuario_ficha: undefined }) }}
         closeMaskOnClick
         showCloseButton={true}
@@ -212,7 +222,7 @@ class UsuarioPermisos extends Component {
 
   modalNuevoUsuario() {
     const { modal_nuevoUsuario } = this.state;
-    const { Server , _usuario} = this.props;
+    const { Server, _usuario } = this.props;
     return (
       <Rodal
         animation={'slideDown'}
@@ -252,10 +262,10 @@ class UsuarioPermisos extends Component {
     http._POST(Server + 'configuracion/usuario.php?accion=one', data).then((res) => {
       if (res !== 'error') {
         this.setState({ usuario_edicion: undefined }, () => {
-          this.setState({ 
-            usuario_edicion: res ,
-            rol : res['id_rol'] ,
-            modal_nuevoUsuario: true 
+          this.setState({
+            usuario_edicion: res,
+            rol: res['id_rol'],
+            modal_nuevoUsuario: true
           });
         });
         this.setState({ cargando: false });
@@ -297,14 +307,14 @@ class UsuarioPermisos extends Component {
     });
   }
 
-  getRolUsuarios(){
+  getRolUsuarios() {
     let Server = String(this.props.Server)
     this.setState({ cargando: true });
 
-    http._GET(Server + 'configuracion/usuario.php?accion=get_rol_usuarios').then(res => {
-      this.setState({ 
-        roles: res ,
-        cargando: false 
+    http._GET(Server + 'configuracion/usuario.php?accion=get_rol_usuarios&rol=' + this.props.rol).then(res => {
+      this.setState({
+        roles: res,
+        cargando: false
       });
     }).catch(err => {
       message.error("Error al cargar Asignaciones." + err);
@@ -314,10 +324,10 @@ class UsuarioPermisos extends Component {
 
   getUsuarios() {
 
-    let Server = String(this.props.Server)
     this.setState({ cargando: true });
+    const { Server, _usuario, rol } = this.props;
 
-    http._GET(Server + 'configuracion/usuario.php?accion=get_usuarios_all').then((res) => {
+    http._GET(Server + 'configuracion/usuario.php?accion=get_usuarios_all&rol=' + rol + "&_usuario=" + _usuario).then((res) => {
       if (res !== 'error') {
         let resultado = new Array()
         for (const objecto of res) {

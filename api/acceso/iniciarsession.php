@@ -32,7 +32,7 @@
       $_SESSION["tiempo"] = time();
 
       //$strQuery = "SELECT id_usuario, nombre_completo, email FROM usuario WHERE username='$_POST[username]'";
-      $strQuery = "SELECT a.id_usuario , a.nombre_completo , a.email , a.id_rol ,
+      $strQuery = "SELECT a.id_usuario , a.nombre_completo , a.email , a.id_rol , a.soporte ,
                           c.accion , 
                           d.modulo
                   FROM usuario a
@@ -49,6 +49,7 @@
         $jsondata['nombre_completo'] = $rTmp['nombre_completo'];
         $jsondata['email'] = $rTmp['email'];
         $jsondata['id_rol'] = $rTmp['id_rol'];
+        $jsondata['soporte'] = $rTmp['soporte'];
         $_SESSION["id_usuario"] = $rTmp['id_usuario'];
         $_SESSION["nombre_completo"] = $rTmp['nombre_completo'];     
         $jsondata['accesos'][$rTmp['accion']] = $rTmp['accion'];

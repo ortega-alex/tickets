@@ -38,12 +38,29 @@ if ( $_GET[accion]=='one' ) {
 }
 
 if($_GET[accion]=='get_usuarios_all') {
+	$intRol = isset($_GET['rol']) ? intval($_GET['rol']) : 0;
+	$intIdUsuario = isset($_GET['_usuario']) ? intval($_GET['_usuario']) : 0;
+
+	if ( $intRol == 1 ) {
+		$_AND = "AND us.id_usuario = {$intIdUsuario}";
+	}
+
+	if ( $intRol == 2 ) {
+		$_AND = "AND us.id_rol NOT IN(3)
+				 AND dp.id_departamento IN (SELECT b.id_departamento 
+										   FROM usuario a
+										   INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario
+										   WHERE a.id_usuario = {$intIdUsuario}
+										   GROUP BY b.id_departamento)";
+	}
+
 	$strQuery = "SELECT us.id_usuario, us.username, us.email, us.nombre_completo, us.estado, us.id_configuracion, 
 						us.creacion, us.soporte, d.departamento, p.puesto, count(*) as 'asignaciones'  
 				 FROM usuario us, departamento d, departamento_puesto dp,  puesto p 
-				 WHERE d.id_departamento=dp.id_departamento 
-				 AND p.id_puesto=dp.id_puesto 
-				 AND dp.id_usuario=us.id_usuario 
+				 WHERE d.id_departamento = dp.id_departamento 
+				 AND p.id_puesto = dp.id_puesto 
+				 AND dp.id_usuario = us.id_usuario 
+				 {$_AND}
 				 GROUP BY us.id_usuario 
 				 ORDER BY us.nombre_completo";	
 	//con asignaciones
@@ -174,94 +191,94 @@ if($_GET[accion]=='nuevo'){
 }
 
 
-if ( $_GET[accion] == 'asignar' ){
-	$sql = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_OF_ROWS 
-							   FROM departamento_puesto 
-							   WHERE id_puesto='$_POST[puesto]' 
-							   AND id_departamento='$_POST[departamento]' 
-							   AND id_usuario='$_POST[usuario]'");
-	$row = mysqli_fetch_assoc($sql);
-	$cols_respuesta = $row['NUMBER_OF_ROWS'];
-	if ( $cols_respuesta == 0 ){
-		$exito=True;
-		$sql = mysqli_query($con, "INSERT INTO departamento_puesto(id_puesto, id_departamento, id_usuario, estado) 
-								   VALUES({$_POST[puesto]}, {$_POST[departamento]}, {$_POST[usuario]}, {$_POST[activo]})");
+if ( $_GET[accion] == 'asignar' ) {
 
-		if ( !$sql ) {
-		  $exito=False;
-		}
+	$intIdUsuario = isset($_POST['usuario']) ? intval($_POST['usuario']) : 0;
+	$intIdDepartamento = isset($_POST['departamento']) ? intval($_POST['departamento']) : 0;
+	$intEdit = isset($_POST['edit']) ? intval($_POST['edit']) : 0;
+	$intIdPuesto = isset($_POST['puesto']) ? intval($_POST['puesto']) : 0;
+	$intIdCargo = isset($_POST['id_cargo']) ? intval($_POST['id_cargo']) : 0;
 
-		$lastid=mysqli_insert_id($con);
-		//////////////////////////////////
-		///aplicamos perfil de permisos///
-		if ( intval($_POST[nuevo_actualizar_permisos]) == 1 ) {
-			/////perfil tickets puesto
-			$sql_ = mysqli_query($con, "SELECT * FROM perfil_tickets WHERE id_puesto={$_POST[puesto]}");
-			//Create an array with the results
-			$results=array();
-			while ( $v = mysqli_fetch_object($sql_) ) {
-				$sql = mysqli_query($con, "INSERT INTO tickets_cargo(id_cargo, id_ticket, estado) 
-											VALUES('$lastid', '$v->id_ticket', 1)");
-				if ( !$sql ) {
-					$exito=False;
-				}
-			}
-
-			/////perfil tickets soporte
-			$sql_ = mysqli_query($con, "SELECT * FROM perfil_tickets_soporte WHERE id_puesto='$_POST[puesto]'");
-			//Create an array with the results
-			$results=array();
-			while ( $v = mysqli_fetch_object($sql_) ) {
-				$sql = mysqli_query($con, "INSERT INTO tickets_soporte(id_cargo, id_ticket, estado) 
-											VALUES('$lastid', '$v->id_ticket', 1)");
-				if ( !$sql ) {
-					$exito=False;
-				}
-			}
-
-			/////perfil tickets global
-			$sql_ = mysqli_query($con, "SELECT * FROM perfil_tickets_soporte_global WHERE id_puesto='$_POST[puesto]'");
-			//Create an array with the results
-			$results=array();
-			while($v = mysqli_fetch_object($sql_)){
-				$sql = mysqli_query($con, "INSERT INTO tickets_soporte_global(id_usuario, id_ticket, estado) 
-										   VALUES((SELECT id_usuario 
-										   		   FROM departamento_puesto dp, puesto p 
-												   WHERE p.id_puesto=dp.id_puesto 
-												   AND p.id_puesto='$_POST[puesto]' LIMIT 1), '$v->id_ticket', 1)");
-				if ( !$sql ) {
-					$exito=False;
-				}
-			}
-		}
-		
-		if ( $exito ) {
-			$strQuery = "SELECT username FROM usuario WHERE id_usuario = {$_POST[usuario]}";
-			$qTmp = mysqli_query($con , $strQuery);
-			$user = mysqli_fetch_object($qTmp);
-			$strQuery = "SELECT departamento FROM departamento WHERE id_departamento = {$_POST[departamento]}";
-			$qTmp = mysqli_query($con , $strQuery);
-			$dep = mysqli_fetch_object($qTmp);
-			setHistorial($_POST['_usuario'] , "Asignación de usuario: {$user->username} , Departamento: {$dep->departamento}" , $con);
-		  	echo json_encode($lastid);
+	$strQuery = "SELECT id_cargo
+				 FROM departamento_puesto 
+				 WHERE id_departamento = {$intIdDepartamento} 
+				 AND id_usuario = {$intIdUsuario}";
+				
+	$qTmp = mysqli_query($con, $strQuery);
+	if ( mysqli_num_rows($qTmp) == 0 ||  $intEdit == 1 ) {		
+		if ( $intEdit == 0 ) {
+			$strQuery = "INSERT INTO departamento_puesto (id_puesto, id_departamento, id_usuario, estado) 
+						 VALUES({$intIdPuesto}, {$intIdDepartamento}, {$intIdUsuario}, {$_POST[activo]})";
 		} else {
-		  	echo json_encode("error");
+			$strQuery = "DELETE FROM tickets_cargo WHERE id_cargo = {$intIdCargo}";
+			mysqli_query($con , $strQuery);
+			$strQuery = "DELETE FROM tickets_soporte WHERE id_cargo = {$intIdCargo}";
+			mysqli_query($con , $strQuery);
+			$strQuery = "DELETE FROM tickets_soporte_global WHERE id_usuario = {$intIdUsuario}";
+			mysqli_query($con , $strQuery);
+			$strQuery = "UPDATE departamento_puesto 
+						 SET id_puesto = {$intIdPuesto} ,
+							 id_departamento = {$intIdDepartamento} ,
+							 id_usuario = {$intIdUsuario} ,
+							 estado = {$_POST[activo]}
+						 WHERE id_cargo = {$intIdCargo}";
+		}
+
+		if (  mysqli_query($con, $strQuery) ) {		  
+			$intIdCargo = ($intEdit == 0) ? $lastid=mysqli_insert_id($con) : $intIdCargo;
+
+			if ( intval($_POST[nuevo_actualizar_permisos]) == 1 ) {
+				/////perfil tickets puesto
+				$strQuery = "SELECT id_ticket
+							 FROM perfil_tickets 
+							 WHERE id_puesto = {$intIdPuesto} ";
+				$qTmp = mysqli_query($con, $strQuery);
+				while ( $rTmp = mysqli_fetch_object($qTmp) ) {
+					$strQuery = "INSERT INTO tickets_cargo ( id_cargo, id_ticket, estado) 
+								 VALUES( {$intIdCargo} , {$rTmp->id_ticket } , 1) ";
+					mysqli_query($con , $strQuery);
+				}
+
+				/////perfil tickets soporte
+				$strQuery = "SELECT id_ticket
+							 FROM perfil_tickets_soporte 
+							 WHERE id_puesto = {$intIdPuesto} ";
+				$qTmp = mysqli_query($con, $strQuery);
+				while ( $rTmp = mysqli_fetch_object($qTmp) ) {
+					$strQuery = "INSERT INTO tickets_soporte(id_cargo, id_ticket, estado) 
+								 VALUES( {$intIdCargo} , {$rTmp->id_ticket} , 1) ";
+					mysqli_query($con, $strQuery);					
+				}
+
+				/////perfil tickets global
+				$strQuery = "SELECT id_ticket
+							 FROM perfil_tickets_soporte_global 
+							 WHERE id_puesto = {$intIdPuesto}";
+				$qTmp = mysqli_query($con, $strQuery);
+				while( $rTmp = mysqli_fetch_object($qTmp) ) {
+					$strQuery = "INSERT INTO tickets_soporte_global(id_usuario, id_ticket, estado) 
+								 VALUES( {$intIdUsuario} , {$rTmp->id_ticket} 5, 1)";
+					mysqli_query($con, $strQuery );
+				}
+			}
+
+			$strQuery = "SELECT b.username , c.departamento
+						 FROM departamento_puesto a
+						 INNER JOIN usuario b ON a.id_usuario = b.id_usuario
+						 INNER JOIN departamento c ON a.id_departamento = c.id_departamento
+						 WHERE b.id_usuario = {$intIdUsuario}
+						 AND c.id_departamento = {$intIdDepartamento}";
+			$qTmp = mysqli_query($con , $strQuery);
+			$rTmp = mysqli_fetch_object($qTmp);
+			setHistorial($_POST['_usuario'] , "Asignación de usuario: {$rTmp->username} , Departamento: {$rTmp->departamento}" , $con);
+			echo json_encode($intIdCargo);			
+		} else {
+			echo json_encode("error");
 		}
 	} else {
 		echo json_encode("existe");
 	}
 }
-
-/*if($_GET[accion]=='borrar_asignacion'){
-	$strQuery = "DELETE FROM departamento_puesto WHERE id_cargo = {$_POST[id_asignacion]}";
-	$qTmp = mysqli_query($con,$strQuery);
-	
-	if($qTmp){
-	  echo json_encode("ok");
-	}else{
-	  echo json_encode("error");
-	}
-}*/
 
 if($_GET[accion]=='get_asignaciones_one'){
 	$sql = mysqli_query($con, "SELECT dp.id_cargo, p.id_puesto, p.puesto, p.limitar_tickets, d.departamento, us.id_usuario, dp.soporte 
@@ -530,25 +547,37 @@ if($_GET[accion]=='get_usuarios_departamento_one'){
 
 
 
-if($_GET[accion]=='get_tickets_abiertas_usuario'){
+if ( $_GET[accion] == 'get_tickets_abiertas_usuario' ) {
+	$intRol = isset($_POST['rol']) ? intval($_POST['rol']) : 0;
+	if ( $intRol == 1 ) {
+		$_WHERE = "WHERE b.id_usuario = {$_POST['id_usuario']}";
+	}
+
+	if ( $intRol == 2 ) {
+		$_WHERE = "WHERE d.id_departamento IN (SELECT b.id_departamento 
+											   FROM usuario a
+											   INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario
+											   WHERE a.id_usuario = {$_POST['id_usuario']}
+											   GROUP BY b.id_departamento)";
+	}
 
 	$strQuery = "SELECT a.nombre_completo  ,
-						b.id_usuario_ticket,  b.nivel_prioridad, b.creacion, b.programada, b.fecha_programada, b.info_adicional , 
+						b.id_usuario_ticket,  b.nivel_prioridad, b.creacion, b.programada, b.fecha_programada, b.info_adicional , b.correlativo , 
 						b.estado, b.id_calificacion ,
 						c.id_ticket,   c.nombre_ticket,   c.descripcion, 
 						e.departamento ,
 						f.puesto,
-						if ( b.id_tecnico is null , 'Sin Asignar' ,   g.nombre_completo  ) as nombre_tecnico
+						IF ( b.id_tecnico IS NULL , 'Sin Asignar' ,   g.nombre_completo  ) AS nombre_tecnico
 				FROM usuario a 
-				inner join usuario_ticket b on a.id_usuario = b.id_usuario AND b.estado = 0 OR b.id_calificacion IS NULL 
-				inner join ticket c on b.id_ticket = c.id_ticket 
-				inner join departamento_puesto d on a.id_usuario = d.id_usuario
-				inner join departamento e on d.id_departamento = e.id_departamento 
-				inner join puesto f on d.id_puesto = f.id_puesto 
-				left join usuario g on b.id_tecnico = g.id_usuario
-				where b.id_usuario = {$_POST['id_usuario']}
+				INNER JOIN usuario_ticket b ON a.id_usuario = b.id_usuario AND b.id_calificacion IS NULL 
+				INNER JOIN ticket c ON b.id_ticket = c.id_ticket 
+				INNER JOIN departamento_puesto d ON b.id_cargo = d.id_cargo
+				INNER JOIN departamento e ON d.id_departamento = e.id_departamento 
+				INNER JOIN puesto f ON d.id_puesto = f.id_puesto 
+				LEFT JOIN usuario g ON b.id_tecnico = g.id_usuario
+				{$_WHERE}
 				GROUP BY b.id_usuario_ticket
-				ORDER BY b.creacion desc";
+				ORDER BY b.creacion DESC";
 
 	$qTemp = mysqli_query($con, $strQuery);
 
@@ -583,14 +612,14 @@ if($_GET[accion]=='get_tickets_abiertas_usuario'){
 			'total_fases_ticket'=>($cantidad_fases_ticket),
 			'nombre_completo'=>($v->nombre_completo),
 			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),
-			'nombre_tecnico'=>($v->nombre_tecnico)
+			'nombre_tecnico'=>($v->nombre_tecnico),
+			'correlativo'=>($v->correlativo)
 		);
 	}
 	echo json_encode($results);
 }
 
-
-if($_GET[accion]=='get_tickets_cerradas_usuario'){
+if ( $_GET[accion] == 'get_tickets_cerradas_usuario' ) {
 	
 	$fecha = new DateTime($_POST['mes']);
 	$fecha->modify('first day of this month');
@@ -599,19 +628,33 @@ if($_GET[accion]=='get_tickets_cerradas_usuario'){
 	$fecha->modify('last day of this month');
 	$fecha_fin = $fecha->format('Y-m-d')." 23:59:59";
 
-	$sql = mysqli_query($con,  "SELECT ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, t.descripcion, ut.estado, 
-									   ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, 
+	$intRol = isset($_POST['rol']) ? intval($_POST['rol']) : 0;
+	if ( $intRol == 1 ) {
+		$_AND = "AND ut.id_usuario = {$_POST['id_usuario']}";
+	}
+
+	if ( $intRol == 2 ) {
+		$_AND = "AND dp.id_departamento IN (SELECT b.id_departamento 
+										    FROM usuario a
+										    INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario
+										    WHERE a.id_usuario = {$_POST['id_usuario']}
+										    GROUP BY b.id_departamento)";
+	}
+
+	$sql = mysqli_query($con,  "SELECT ut.correlativo , ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, t.descripcion, ut.estado, 
+									   ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional , fecha_fin , 
 									   p.puesto, d.departamento, us.nombre_completo  
 								FROM usuario us, usuario_ticket ut, ticket t, departamento_puesto dp, departamento d, puesto p 
-								WHERE t.id_ticket=ut.id_ticket 
-								AND ut.id_usuario=us.id_usuario 
-								AND us.id_usuario=dp.id_usuario 
-								AND dp.id_departamento=d.id_departamento 
-								AND dp.id_puesto=p.id_puesto 
-								AND ut.estado=1 
-								AND us.id_usuario={$_POST['id_usuario']} 
+								WHERE t.id_ticket = ut.id_ticket 
+								AND ut.id_usuario = us.id_usuario 
+								AND ut.id_cargo = dp.id_cargo 
+								AND dp.id_departamento = d.id_departamento 
+								AND dp.id_puesto = p.id_puesto 
+								AND ut.estado = 1 
+								{$_AND}
 								AND ut.creacion BETWEEN '{$fecha_init}' AND '{$fecha_fin}'
-								GROUP BY ut.id_usuario_ticket");
+								GROUP BY ut.id_usuario_ticket
+								ORDER BY ut.fecha_fin DESC");
 
 	//Create an array with the results
 	$results=array();
@@ -630,16 +673,17 @@ if($_GET[accion]=='get_tickets_cerradas_usuario'){
 			'puesto'=>($v->puesto),
 			'departamento'=>($v->departamento),
 			'nombre_completo'=>($v->nombre_completo),
-
-			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),	
+			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),
+			'correlativo'=>($v->correlativo) ,
+			'fecha_fin'=>($v->fecha_fin) 	
 		);
 	}
 	echo json_encode($results);
 }
 
-
 if($_GET[accion]=='get_tickets_abiertas_soporte'){
 	
+	$intRol = isset($_POST['rol']) ? intval($_POST['rol']) : 0;
 	$date = array();
 	if(!empty($_POST[fecha])){
 		$fecha_de= $_POST[fecha].' 00:00:00';
@@ -649,67 +693,88 @@ if($_GET[accion]=='get_tickets_abiertas_soporte'){
 		$date[2] = "AND d.fecha_programada BETWEEN '{$fecha_de}' AND '{$fecha_a}'";
 	}	
 
-	$strQuery = "(
-					SELECT a.nombre_completo  ,
-							b.id_usuario_ticket , b.estado , b.nivel_prioridad , b.creacion , b.programada , b.fecha_programada , b.info_adicional ,
+	if ( $intRol == 1 ) {
+		$strQuery = "	SELECT a.nombre_completo  ,
+								b.id_usuario_ticket , b.estado , b.nivel_prioridad , b.creacion , b.programada , b.fecha_programada , 
+								b.info_adicional , b.correlativo ,
+								c.id_ticket , c.nombre_ticket , c.descripcion ,
+								e.departamento ,
+								f.puesto 
+						FROM usuario a 
+						INNER JOIN usuario_ticket b ON a.id_usuario = b.id_usuario 
+						INNER JOIN ticket c ON b.id_ticket = c.id_ticket 
+						INNER JOIN departamento_puesto d ON b.id_cargo = d.id_cargo 
+						INNER JOIN departamento e ON d.id_departamento = e.id_departamento 
+						INNER JOIN puesto f ON d.id_puesto = f.id_puesto 
+						WHERE b.estado = 0
+						AND b.id_tecnico = {$_POST['id_usuario']}
+						{$date[0]}
+						GROUP BY b.id_usuario_ticket				
+					UNION				
+						SELECT f.nombre_completo ,
+								e.id_usuario_ticket , e.estado , e.nivel_prioridad , e.creacion , e.programada , e.fecha_programada ,
+								e.info_adicional , e.correlativo ,
+								d.id_ticket , d.nombre_ticket , d.descripcion ,
+								h.departamento ,
+								i.puesto
+						FROM usuario a
+						INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario 
+						LEFT JOIN tickets_soporte c ON b.id_cargo = c.id_cargo
+						INNER JOIN ticket d ON c.id_ticket = d.id_ticket
+						INNER JOIN usuario_ticket e ON d.id_ticket = e.id_ticket
+						LEFT JOIN usuario f ON e.id_usuario = f.id_usuario 
+						INNER JOIN departamento_puesto g ON e.id_cargo = g.id_cargo
+						INNER JOIN departamento h ON g.id_departamento = h.id_departamento
+						INNER JOIN puesto i ON g.id_puesto = i.id_puesto
+						WHERE a.id_usuario = {$_POST['id_usuario']}
+						AND e.estado = 0 AND e.id_tecnico IS NULL
+						{$date[1]}
+						GROUP BY e.id_usuario_ticket				
+					UNION 				
+						SELECT e.nombre_completo ,
+								d.id_usuario_ticket , d.estado , d.nivel_prioridad , d.creacion , d.programada , d.fecha_programada , 
+								d.info_adicional , d.correlativo ,
+								c.id_ticket , c.nombre_ticket , c.descripcion ,
+								g.departamento ,
+								h.puesto 
+						FROM usuario a 
+						INNER JOIN tickets_soporte_global b ON a.id_usuario = b.id_usuario
+						INNER JOIN ticket c ON b.id_ticket = c.id_ticket 
+						INNER JOIN usuario_ticket d ON c.id_ticket = d.id_ticket 
+						LEFT JOIN usuario e ON d.id_usuario = e.id_usuario 
+						INNER JOIN departamento_puesto f ON d.id_usuario = f.id_usuario 
+						INNER JOIN departamento g ON f.id_departamento = g.id_departamento 
+						INNER JOIN puesto h ON f.id_puesto = h.id_puesto 
+						WHERE a.id_usuario = {$_POST['id_usuario']}
+						AND d.estado = 0 
+						AND d.id_tecnico IS NULL
+						{$date[2]}
+						GROUP BY d.id_usuario_ticket
+					ORDER BY creacion DESC";
+	} else {
+		$_AND = ($intRol == 2) ? "AND d.id_departamento IN (SELECT b.id_departamento 
+															FROM usuario a
+															INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario
+															WHERE a.id_usuario = {$_POST['id_usuario']}
+															GROUP BY b.id_departamento)" : "";
+		$strQuery = "SELECT a.nombre_completo  ,
+							b.id_usuario_ticket , b.estado , b.nivel_prioridad , b.creacion , b.programada , b.fecha_programada , 
+							b.info_adicional , b.correlativo ,
 							c.id_ticket , c.nombre_ticket , c.descripcion ,
 							e.departamento ,
 							f.puesto 
 					FROM usuario a 
 					INNER JOIN usuario_ticket b ON a.id_usuario = b.id_usuario 
 					INNER JOIN ticket c ON b.id_ticket = c.id_ticket 
-					INNER JOIN departamento_puesto d ON a.id_usuario = d.id_usuario 
+					INNER JOIN departamento_puesto d ON b.id_cargo = d.id_cargo 
 					INNER JOIN departamento e ON d.id_departamento = e.id_departamento 
 					INNER JOIN puesto f ON d.id_puesto = f.id_puesto 
 					WHERE b.estado = 0
-					AND b.id_tecnico = {$_POST['id_usuario']}
-					{$date[0]}
-					GROUP BY b.id_usuario_ticket
-				)
-				UNION
-				(
-					SELECT f.nombre_completo ,
-							e.id_usuario_ticket , e.estado , e.nivel_prioridad , e.creacion , e.programada , e.fecha_programada , e.info_adicional , 
-							d.id_ticket , d.nombre_ticket , d.descripcion ,
-							h.departamento ,
-							i.puesto
-					FROM usuario a
-					INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario 
-					LEFT JOIN tickets_soporte c ON b.id_cargo = c.id_cargo
-					INNER JOIN ticket d ON c.id_ticket = d.id_ticket
-					INNER JOIN usuario_ticket e ON d.id_ticket = e.id_ticket
-					LEFT JOIN usuario f ON e.id_usuario = f.id_usuario 
-					INNER JOIN departamento_puesto g ON e.id_usuario = g.id_usuario
-					INNER JOIN departamento h ON g.id_departamento = h.id_departamento
-					INNER JOIN puesto i ON g.id_puesto = i.id_puesto
-					WHERE a.id_usuario = {$_POST['id_usuario']}
-					AND e.estado = 0 AND e.id_tecnico IS NULL
-					{$date[1]}
-					GROUP BY e.id_usuario_ticket
-				)
-				UNION 
-				(
-					SELECT e.nombre_completo ,
-							d.id_usuario_ticket , d.estado , d.nivel_prioridad , d.creacion , d.programada , d.fecha_programada , d.info_adicional ,
-							c.id_ticket , c.nombre_ticket , c.descripcion ,
-							g.departamento ,
-							h.puesto 
-					FROM usuario a 
-					INNER JOIN tickets_soporte_global b ON a.id_usuario = b.id_usuario
-					INNER JOIN ticket c ON b.id_ticket = c.id_ticket 
-					INNER JOIN usuario_ticket d ON c.id_ticket = d.id_ticket 
-					LEFT JOIN usuario e ON d.id_usuario = e.id_usuario 
-					INNER JOIN departamento_puesto f ON d.id_usuario = f.id_usuario 
-					INNER JOIN departamento g ON f.id_departamento = g.id_departamento 
-					INNER JOIN puesto h ON f.id_puesto = h.id_puesto 
-					WHERE a.id_usuario = {$_POST['id_usuario']}
-					AND d.estado = 0 
-					AND d.id_tecnico IS NULL
-					{$date[2]}
-					GROUP BY d.id_usuario_ticket
-				)
-
-				ORDER BY creacion DESC";
+					{$date[0]}	
+					{$_AND}				
+					GROUP BY b.id_usuario_ticket";
+	}
+	
 	$sql = mysqli_query($con, $strQuery);
 	
 	//cantidad fases
@@ -747,14 +812,14 @@ if($_GET[accion]=='get_tickets_abiertas_soporte'){
 			'total_fases'=>($cantidad_fases),
 			'total_fases_ticket'=>($cantidad_fases_ticket),
 			'nombre_completo'=>($v->nombre_completo),
-			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),		
+			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),	
+			'correlativo'=>($v->correlativo)	
 		);
 	}
 	echo json_encode($results);
 }
 
-
-if($_GET[accion]=='get_tickets_cerradas_soporte'){
+if ( $_GET[accion] == 'get_tickets_cerradas_soporte' ) {
 
 	$fecha = new DateTime($_POST['mes']);
 	$fecha->modify('first day of this month');
@@ -763,16 +828,33 @@ if($_GET[accion]=='get_tickets_cerradas_soporte'){
 	$fecha->modify('last day of this month');
 	$fecha_fin = $fecha->format('Y-m-d')." 23:59:59";
 
-	$sql = mysqli_query($con,  "SELECT ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, ut.estado, t.descripcion, 
-									   ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, 
+	$intRol = isset($_POST['rol']) ? intval($_POST['rol']) : 0;
+	if ( $intRol == 1 ) {
+		$_AND = "AND ut.id_tecnico = {$_POST['id_usuario']} ";
+	}
+
+	if ( $intRol == 2 ) {
+		$_AND = "AND dp.id_departamento IN (SELECT b.id_departamento 
+										    FROM usuario a
+										    INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario
+										    WHERE a.id_usuario = {$_POST['id_usuario']}
+										    GROUP BY b.id_departamento)";
+	}
+
+	$sql = mysqli_query($con,  "SELECT ut.correlativo , ut.id_usuario_ticket, t.id_ticket, t.nombre_ticket, ut.estado, t.descripcion, 
+									   ut.nivel_prioridad, ut.creacion, ut.programada, ut.fecha_programada, ut.info_adicional, fecha_fin ,
 									   p.puesto, d.departamento, us.nombre_completo  
 								FROM usuario us, usuario_ticket ut, ticket t, departamento_puesto dp, departamento d, puesto p 
-								WHERE t.id_ticket=ut.id_ticket AND ut.id_usuario=us.id_usuario 
-								AND us.id_usuario=dp.id_usuario AND dp.id_departamento=d.id_departamento 
-								AND dp.id_puesto=p.id_puesto AND ut.estado=1 AND ut.id_usuario={$_POST['id_usuario']} 
+								WHERE t.id_ticket = ut.id_ticket 
+								AND ut.id_usuario=us.id_usuario 
+								AND ut.id_cargo = dp.id_cargo 
+								AND dp.id_departamento=d.id_departamento 
+								AND dp.id_puesto = p.id_puesto 
+								AND ut.estado=1 								
+								{$_AND}								
 								AND ut.creacion BETWEEN '{$fecha_init}' AND '{$fecha_fin}'
-								GROUP BY ut.id_usuario_ticket");
-
+								GROUP BY ut.id_usuario_ticket
+								ORDER BY ut.fecha_fin DESC");
 
 	//Create an array with the results
 	$results=array();
@@ -791,7 +873,9 @@ if($_GET[accion]=='get_tickets_cerradas_soporte'){
 			'puesto'=>($v->puesto),
 			'departamento'=>($v->departamento),
 			'nombre_completo'=>($v->nombre_completo),
-			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),		
+			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),
+			'correlativo'=>($v->correlativo) ,
+			'fecha_fin'=>($v->fecha_fin)		
 		);
 	}
 	echo json_encode($results);
@@ -826,6 +910,8 @@ if($_GET[accion]=='get_tickets_cerradas_soporte'){
 								b.id_modulo , b.modulo
 						 FROM accion a 
 						 INNER JOIN modulo b ON a.id_modulo = b.id_modulo
+						 AND a.estado = 1
+						 AND b.estado = 1
 						 ORDER BY a.id_modulo";
 			$qTpm = mysqli_query($con, $strQuery);
 			while ( $rTmp = mysqli_fetch_array($qTpm)) {
@@ -911,7 +997,12 @@ if($_GET[accion]=='get_tickets_cerradas_soporte'){
 	}
 
 	if ($_GET['accion'] == 'get_rol_usuarios') {
-		$strQuery = "SELECT * FROM rol";
+		if ( $_GET['rol'] != 3 ) {
+			$_AND = "WHERE id_rol NOT IN(3)";
+		}
+		$strQuery = "SELECT id_rol , rol 
+					 FROM rol
+					 {$_AND}";
 		$qTmp = mysqli_query($con , $strQuery);
 		$arr = array();
 		while($rTmp = mysqli_fetch_object($qTmp)){

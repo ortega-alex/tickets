@@ -6,6 +6,8 @@ import { Icon, DatePicker, Form, Radio, Input, Tooltip, message, Select, Button,
 import http from '../services/http.services';
 
 var moment = require('moment');
+require("moment/min/locales.min");
+moment.locale('es');
 var subiendo = false;
 
 const FormItem = Form.Item;

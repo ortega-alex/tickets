@@ -4,12 +4,14 @@ import Form_NuevoUsuario from "./forms/nuevo_usuario"
 import Form_Asignacion from "./forms/nueva_asignacion"
 import Rodal from 'rodal';
 import { Grid } from 'semantic-ui-react'
-import { Icon, Popconfirm, Form, Tabs, Tooltip, message, Button, Switch } from 'antd';
+import { Icon, Form, Tabs, Tooltip, message, Button, Switch } from 'antd';
 
 import { AgGridReact, AgGridColumn } from 'ag-grid-react';
 import http from '../services/http.services';
 
 var moment = require('moment');
+require("moment/min/locales.min");
+moment.locale('es');
 const FormItem = Form.Item;
 const TabPane = Tabs.TabPane;
 
@@ -29,6 +31,7 @@ class ver_departamento extends Component {
       cargando: false,
       tab: 1,
     }
+    console.log(this.props);
   }
 
   componentDidMount() {
@@ -42,7 +45,7 @@ class ver_departamento extends Component {
           <h2 style={{ display: 'flex', flex: 1, justifyContent: 'center', }}>
             {(this.state.departamento !== undefined) && this.state.departamento.departamento}
           </h2>
-          {(this.state.departamento) &&
+          {(this.state.departamento && this.props.accesos['Activar/Desactivar_Departamento']) &&
             <FormItem
               style={{ display: 'flex', justifyContent: 'flex-end' }}
               label={(
@@ -64,10 +67,10 @@ class ver_departamento extends Component {
               this.setState({ tab: tab })
             }}>
             <TabPane forceRender tab="Usuarios Asignados" key="1">
-              <ModuloPuestos _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} />
+              <ModuloPuestos rol={this.props.rol} accesos={this.props.accesos} _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} />
             </TabPane>
             <TabPane forceRender tab="Puestos" key="2">
-              <PuestosDpto _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} />
+              <PuestosDpto accesos={this.props.accesos} _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} />
             </TabPane>
             <TabPane forceRender tab="Tickets Generadas" key="3">
               <TicketsGeneradas Server={this.props.Server} id_departamento={this.props.id_departamento} />
@@ -146,7 +149,9 @@ class UsuariosAsignados extends Component {
       id_departamento: undefined,
       usuarios_departamento: [],
       searchText: '',
+      edit_asignacion_usuario: undefined
     }
+    console.log("usuario asignacion" , this.props);
   }
 
   componentDidMount() {
@@ -191,25 +196,35 @@ class UsuariosAsignados extends Component {
                 }
                 return (
                   <div style={{ display: 'flex', flexDirection: 'row', height: '25px', justifyContent: 'center', alignItems: 'center' }}>
-                    {/*<Popconfirm title="Borrar esta asignación?" onConfirm={() => { this.borrarAsignacion(param.value.id_cargo) }} onCancel={() => { }} okText="Sí" cancelText="Cancelar">
-                      <Icon type="delete" style={{ color: '#B3B6B7', fontSize: 16 }} />
-                    </Popconfirm>*/}
+                     {this.props.accesos['Editar_Usuario'] &&
+                      <Button
+                        type="button"
+                        onClick={() => { this.cargarAsignacionEdicion(param.value , activo) }}
+                        style={{ backgroundColor: 'transparent', width: 40, border: 'none', borderColor: 'red', outline: 'none' }}
+                      >
+                        <Icon type="edit" style={{ color: '#B3B6B7', fontSize: 16 }} />
+                      </Button>
+                    }
+                    { this.props.accesos['Activar/Desactivar_Puesto_Por_Departamento'] &&
                     <Tooltip title={motivo} placement='right'>
                       <div>
                         <Switch size="small" disabled={!directo} defaultChecked={activo} onChange={(valor) => { this.cambiarEstadoAsignacion(param.value.id_cargo, valor) }} style={{ marginLeft: 10 }} />
                       </div>
                     </Tooltip>
+                    }
                   </div>
                 )
               }}
-            />
-          </AgGridReact>
+            />      
+          </AgGridReact>     
         </div>
-        <div style={{ display: 'flex', flex: 1, height: "10%", width: '100%', justifyContent: 'flex-end', alignItems: 'center', marginTop: 5, paddingRight: 20 }}>
-          <Button onClick={() => { this.solicitoAsignacion() }} type="primary" htmlType="button" style={{ display: 'flex', width: '30%', justifyContent: 'center', alignItems: 'center' }}>
-            <Icon type="plus-circle" style={{ color: 'white', fontSize: 13 }} /> Nueva Asignación
-        </Button>
-        </div>
+        { this.props.accesos['Nueva_Asignacion_Por_Departamento'] && 
+          <div style={{ display: 'flex', flex: 1, height: "10%", width: '100%', justifyContent: 'flex-end', alignItems: 'center', marginTop: 5, paddingRight: 20 }}>
+            <Button onClick={() => { this.solicitoAsignacion() }} type="primary" htmlType="button" style={{ display: 'flex', width: '30%', justifyContent: 'center', alignItems: 'center' }}>
+              <Icon type="plus-circle" style={{ color: 'white', fontSize: 13 }} /> Nueva Asignación
+            </Button>
+          </div>
+        }        
       </div>
     )
   }
@@ -239,26 +254,6 @@ class UsuariosAsignados extends Component {
     });
   }
 
-  /*borrarAsignacion(id_asignacion) {
-    let Server = String(this.props.Server);
-    var data = new FormData();
-    data.append('id_asignacion', id_asignacion);
-
-    http._POST(Server + 'configuracion/usuario.php?accion=borrar_asignacion', data).then(res => {
-      if (res !== 'error') {
-        message.success("Asignación borrada.");
-        this.setState({ cargando: false });
-        this.getUsuariosDepartamento();
-      } else {
-        message.error("Ha ocurrido un error.");
-        this.setState({ cargando: false });
-      }
-    }).catch(err => {
-      message.error("Ha ocurrido un error." + err);
-      this.setState({ cargando: false });
-    });
-  }*/
-
   handleSearch = (selectedKeys, confirm) => () => {
     confirm();
     this.setState({ searchText: selectedKeys[0] });
@@ -269,8 +264,21 @@ class UsuariosAsignados extends Component {
     this.setState({ searchText: '' });
   }
 
+  cargarAsignacionEdicion(data , activo) {
+    this.setState({
+      edit_asignacion_usuario : {
+        id_cargo : data['id_cargo'] ,
+        id_departamento : data['departamento']['id_departamento'] ,
+        id_usuario : data['usuario']['id_usuario'] ,
+        id_puesto: data['puesto']['id_puesto'] ,
+        estado : activo 
+      } ,      
+      modal_Asignacion: true
+    });
+  }
+
   solicitoAsignacion() {
-    this.setState({ modal_Asignacion: true });
+    this.setState({ edit_asignacion_usuario : undefined , modal_Asignacion: true });
   }
 
   modalAsignacion() {
@@ -278,7 +286,8 @@ class UsuariosAsignados extends Component {
       <Rodal
         animation={'flip'}
         visible={this.state.modal_Asignacion}
-        height={400}
+        width={450}
+        height={450}
         onClose={() => { this.setState({ modal_Asignacion: !this.state.modal_Asignacion, id_usuario: undefined }) }}
         closeMaskOnClick
         showCloseButton={true}
@@ -286,27 +295,41 @@ class UsuariosAsignados extends Component {
       >
         <div style={{ display: 'flex', flexDirection: 'column', height: '10%', alignItems: 'center', justifyContent: 'flex-start' }}>
           <h2 style={{ textAlign: 'center' }}>
-            <Tooltip title="Crea un usuario si no existe">
-              <button
-                type="button"
-                onClick={this.solicitar_nuevoUsuario.bind(this)}
-                style={{ backgroundColor: 'transparent', width: 40, border: 'none', borderColor: 'red', outline: 'none' }}
-              >
-                <Icon type="user-add" style={{ color: '#3498DB', }} />
-              </button>
-            </Tooltip>
-            Asignación de Usuario
-        </h2>
+            { this.props.accesos['Nuevo_Usuario'] && 
+              <Tooltip title="Crea un usuario si no existe">
+                <button
+                  type="button"
+                  onClick={this.solicitar_nuevoUsuario.bind(this)}
+                  style={{ backgroundColor: 'transparent', width: 40, border: 'none', borderColor: 'red', outline: 'none' }}
+                >
+                  <Icon type="user-add" style={{ color: '#3498DB', }} />
+                </button>
+              </Tooltip>
+            }
+            { (this.state.edit_asignacion_usuario) ? 'Edición ' : ''}  Asignación de Usuario
+          </h2>
         </div>
         {(this.state.modal_Asignacion) &&
-          <Form_Asignacion _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} closeModalAsignacion={this.closeModalAsignacion.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} id_usuario={this.state.id_usuario} />
+          <Form_Asignacion rol={this.props.rol} edit_asignacion_usuario={this.state.edit_asignacion_usuario} _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} closeModalAsignacion={this.closeModalAsignacion.bind(this)} Server={this.props.Server} id_departamento={this.props.id_departamento} id_usuario={this.state.id_usuario} />
         }
       </Rodal>
     )
   }
 
   solicitar_nuevoUsuario() {
-    this.setState({ modal_nuevoUsuario: true })
+    let Server = String(this.props.Server)
+    this.setState({ cargando: true });
+
+    http._GET(Server + 'configuracion/usuario.php?accion=get_rol_usuarios&rol=' + this.props.rol).then(res => {
+      this.setState({
+        roles: res,
+        cargando: false ,
+        modal_nuevoUsuario: true 
+      });
+    }).catch(err => {
+      message.error("Error al cargar Asignaciones." + err);
+      this.setState({ cargando: false });
+    });
   }
 
   modalNuevoUsuario() {
@@ -314,7 +337,7 @@ class UsuariosAsignados extends Component {
       <Rodal
         animation={'slideDown'}
         visible={this.state.modal_nuevoUsuario}
-        height={550}
+        height={600}
         width={450}
         onClose={() => { this.setState({ modal_nuevoUsuario: !this.state.modal_nuevoUsuario }) }}
         closeMaskOnClick
@@ -322,7 +345,7 @@ class UsuariosAsignados extends Component {
         customStyles={{ borderRadius: 10 }}
       >
         {(this.state.modal_nuevoUsuario) &&
-          <Form_NuevoUsuario Server={this.props.Server} closeModalNuevoUsuario={this.closeModalNuevoUsuario.bind(this)} />
+          <Form_NuevoUsuario rol={this.props.rol} roles={this.state.roles} Server={this.props.Server} closeModalNuevoUsuario={this.closeModalNuevoUsuario.bind(this)} />
         }
       </Rodal>
     )
@@ -343,11 +366,13 @@ class UsuariosAsignados extends Component {
   }
 
   getUsuariosDepartamento() {
-    let Server = String(this.props.Server)
+    const { Server , id_departamento , rol , _usuario } = this.props;
     this.setState({ cargando: true })
 
     var data = new FormData();
-    data.append('id_departamento', this.props.id_departamento);
+    data.append('id_departamento', id_departamento);
+    data.append('rol', rol);
+    data.append('_usuario', _usuario);
 
     http._POST(Server + 'configuracion/departamento.php?accion=asignaciones', data).then(res => {
       if (res !== 'error') {
@@ -408,7 +433,7 @@ class PuestosDpto extends Component {
           <Grid columns='equal' colums={4} padded stackable >
             {this.state.puestos_departamento.map((puesto, i) => (
               <Grid.Column width={4} key={i}>
-                <ItemPuesto _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} getPuestosDepartamento={this.getPuestosDepartamento.bind(this)} Server={this.props.Server} puesto={puesto.puesto} estado={puesto.estado_final} id_departamento={this.props.id_departamento} />
+                <ItemPuesto accesos={this.props.accesos} _usuario={this.props._usuario} getDepartamentos={this.props.getDepartamentos.bind(this)} getPuestosDepartamento={this.getPuestosDepartamento.bind(this)} Server={this.props.Server} puesto={puesto.puesto} estado={puesto.estado_final} id_departamento={this.props.id_departamento} />
               </Grid.Column>
             ))}
           </Grid>
@@ -418,11 +443,11 @@ class PuestosDpto extends Component {
   }
 
   getPuestosDepartamento() {
-    let Server = String(this.props.Server)
+    const { Server , id_departamento } = this.props;
     this.setState({ cargando: true })
 
     var data = new FormData();
-    data.append('id_departamento', this.props.id_departamento);
+    data.append('id_departamento', id_departamento);   
 
     http._POST(Server + 'configuracion/departamento.php?accion=puestos', data).then(res => {
       if (res !== 'error') {
@@ -552,13 +577,15 @@ class ItemPuesto extends Component {
         <div style={{ width: '100%', height: '100%', whiteSpace: 'pre-wrap' }}>
           {this.props.puesto.puesto}
         </div>
-        <div style={{ flex: 'display', width: '100%', textAlign: 'right' }}>
-          <Tooltip title={motivo} placement='right'>
-            <div>
-              <Switch defaultChecked={activo} disabled={!directo} size="small" onChange={(valor) => { this.cambiarEstadoPuestoDpto(valor) }} />
-            </div>
-          </Tooltip>
-        </div>
+        { this.props.accesos['Activar/Desactivar_Puesto_Por_Departamento'] && 
+          <div style={{ flex: 'display', width: '100%', textAlign: 'right' }}>
+            <Tooltip title={motivo} placement='right'>
+              <div>
+                <Switch defaultChecked={activo} disabled={!directo} size="small" onChange={(valor) => { this.cambiarEstadoPuestoDpto(valor) }} />
+              </div>
+            </Tooltip>
+          </div>
+        }        
         <div style={{ fontSize: 10 }}>
           {this.props.estado.motivo}
         </div>

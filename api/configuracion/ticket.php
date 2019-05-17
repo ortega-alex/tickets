@@ -380,11 +380,12 @@ if($_GET[accion]=='get_tickets_all'){
 }
 
 if ( $_GET[accion] == 'aperturar_ticket' ) {
+	$strCorrelativo = date("Ymd").time();
 	$strQuery = "INSERT INTO usuario_ticket ( id_ticket, id_usuario, id_cargo, nivel_prioridad, 
-													 programada, fecha_programada, info_adicional) 
+													 programada, fecha_programada, info_adicional , correlativo ) 
 							 VALUES( {$_POST[id_ticket]}, {$_POST[id_usuario]} , {$_POST[id_cargo]}, 
 											 {$_POST[nivel_prioridad]}, {$_POST[programada]}, '{$_POST[fecha_programada]}', 
-											 '{$_POST[info_adicional]}' )";
+											 '{$_POST[info_adicional]}' , {$strCorrelativo})";
 
 	if ( mysqli_query($con, $strQuery) ) {
 	  $lastid=mysqli_insert_id($con);
@@ -534,7 +535,7 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 	$strQuery =  "SELECT c.categoria, sb.sub_categoria, t.nombre_ticket, t.procedimiento, t.descripcion, 
 											 ut.id_usuario_ticket, ut.nivel_prioridad, ut.creacion, ut.programada, 
 											 ut.fecha_programada, ut.info_adicional, ut.estado, ut.id_calificacion, 
-											 us.username, us.username, us.nombre_completo, d.departamento, p.puesto 
+											 us.username, us.username, us.nombre_completo , us.id_usuario , d.departamento, p.puesto  
 								FROM categoria c, sub_categoria sb, ticket t, usuario_ticket ut, usuario us,
 									   departamento_puesto dp, puesto p, departamento d 
 								WHERE c.id_categoria=sb.id_categoria 
@@ -582,6 +583,7 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 	$jsondata['fases'] = $fases_tickets;
 	$jsondata['mensajes'] = $mensajes_ticket;
 	$jsondata['archivos'] = $arr;
+	$jsondata['id_usuario'] = $row->id_usuario;
 
 	echo json_encode($jsondata);
 }
@@ -598,20 +600,22 @@ if($_GET[accion]=='tomar_ticket'){
 
 function ticket_siguiente_fase ( $id_usuario_ticket , $id_tecnico, $con ) {
 
-	$fecha= date("Y-m-d H:i:s");
 	$exe = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW 
-	 														FROM usuario_ticket_fase utf 
-															WHERE utf.id_usuario_ticket = $id_usuario_ticket");
+	 													 FROM usuario_ticket_fase utf 
+														 WHERE utf.id_usuario_ticket = {$id_usuario_ticket}");
 	$row = mysqli_fetch_assoc($exe);
 	$fases = $row['NUMBER_ROW'];
 
 	if ( intval($fases) == 0 ) {
-	 	mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio ) 
-		 										VALUES({$id_usuario_ticket}, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT 1), 0, '{$fecha}' )" );
+	 	mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase ) 
+		 										VALUES( {$id_usuario_ticket} , ( SELECT id_fase 
+												 																 FROM fase 
+																												 ORDER BY orden 
+																												 ASC LIMIT 1) )" );
 	} else {
 	 	$fase_siguiente = intval($fases) + 1;
 	 	//total fases
-	 	$exeb = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM fase WHERE estado=1");
+	 	$exeb = mysqli_query($con, "SELECT COUNT(*) AS NUMBER_ROW FROM fase WHERE estado = 1");
 		$rowb = mysqli_fetch_assoc($exeb);
 		$total_fases = $rowb['NUMBER_ROW'];
 
@@ -624,10 +628,11 @@ function ticket_siguiente_fase ( $id_usuario_ticket , $id_tecnico, $con ) {
 		$rowultima = mysqli_fetch_assoc($ultima);
 		$id_usuario_ticket_fase = $rowultima['id_usuario_ticket_fase'];
 	 	mysqli_query($con, "UPDATE usuario_ticket_fase 
-		 										SET fecha_fin='$fecha', estado=1 
-												WHERE id_usuario_ticket_fase='$id_usuario_ticket_fase'");
+		 										SET fecha_fin = current_timestamp() , 
+												 		estado = 1 
+												WHERE id_usuario_ticket_fase = {$id_usuario_ticket_fase}");
 
-	 	$limitar=$fase_siguiente-1;
+	 	$limitar = $fase_siguiente-1;
 
 		if(intval($fase_siguiente) < intval($total_fases)){
 			////////////////////////////////////////
@@ -642,40 +647,47 @@ function ticket_siguiente_fase ( $id_usuario_ticket , $id_tecnico, $con ) {
 			if ( $id_ultimo_tecnico != 0 ) {
 		 		if ( intval($id_ultimo_tecnico) == intval($id_tecnico) ) {
 		 			//insertamos fase siguiente
-					mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio, id_tecnico) 
-															VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT $limitar, 1), 0, '$fecha', $id_tecnico)" );
+					mysqli_query($con, "INSERT INTO usuario_ticket_fase ( id_usuario_ticket , id_fase, id_tecnico ) 
+															VALUES( {$id_usuario_ticket} , ( SELECT id_fase 
+																															 FROM fase 
+																															 ORDER BY orden 
+																															 ASC LIMIT $limitar, 1) , 
+																		  {$id_tecnico} )" );
 		 			$mensaje="Tu ticket ha cambiado de estado!";
 		 		} else {
-					//ha habido un cambio de técnico
+					print("ha habido un cambio de técnico");
 					//ha pasado a la siguiente fase con el mismo tencico
-					$exe_t2 = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario=$id_tecnico");
+					$exe_t2 = mysqli_query($con, " SELECT nombre_completo FROM usuario WHERE id_usuario = $id_tecnico ");
 					$row_t2 = mysqli_fetch_assoc($exe_t2);
 					$nombre_tecnico2 = $row_t2['nombre_completo'];
 					$mensaje=$nombre_tecnico." no ha podido continuar atendiendo tu ticket, pero ".$nombre_tecnico2." se hará cargo de ella a partir de ahora.";
 
 					//enviamos notificacion
-					$mensaje_2=$nombre_tecnico2." ha tomado tu ticket.";
-					mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
-															VALUES('$id_tecnico', 'Ticket Aceptada!', '$mensaje_2', '$fecha', 'ver_ticket_all', '$id_usuario_ticket', 1)" );
-
+					//$mensaje_2 = $nombre_tecnico2." ha tomado tu ticket.";
+					//mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
+															//VALUES('$id_tecnico', 'Ticket Aceptada!', '$mensaje_2', '$fecha', 'ver_ticket_all', '$id_usuario_ticket', 1)" );
 				}
 			} else {
 				//insertamos fase siguiente
-				mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase, estado, fecha_inicio, id_tecnico) 
-														VALUES($id_usuario_ticket, (SELECT id_fase FROM fase ORDER BY orden ASC LIMIT $limitar, 1), 0, '$fecha', $id_tecnico)" );
+				mysqli_query($con, "INSERT INTO usuario_ticket_fase(id_usuario_ticket, id_fase , id_tecnico) 
+														VALUES($id_usuario_ticket, ( SELECT id_fase 
+																												 FROM fase 
+																												 ORDER BY orden 
+																												 ASC LIMIT $limitar, 1), $id_tecnico)" );
 				$mensaje=$nombre_tecnico." ha tomado tu ticket, muy pronto le estará dando solución!";
 			}
-
 			mysqli_query($con, "UPDATE usuario_ticket 
-													SET id_tecnico=$id_tecnico 
-													WHERE id_usuario_ticket=$id_usuario_ticket");
+													SET id_tecnico = {$id_tecnico} 
+													WHERE id_usuario_ticket = {$id_usuario_ticket}");
 		} else {
 			//damos por finalizada ticket
 			mysqli_query($con, "UPDATE usuario_ticket 
-													SET estado=1, id_tecnico=$id_tecnico 
-													WHERE id_usuario_ticket=$id_usuario_ticket");
+													SET estado=1, id_tecnico = $id_tecnico , 
+															fecha_fin = current_timestamp()
+													WHERE id_usuario_ticket = {$id_usuario_ticket}");
 			$mensaje="Ticket dada por finalizada.";
 		}
+		
 		//enviamos notificacion
 		mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) 
 												VALUES((SELECT id_usuario FROM usuario_ticket WHERE id_usuario_ticket=$id_usuario_ticket), 'Ticket Actualizada!', '$mensaje', '$fecha', 'ver_ticket', '$id_usuario_ticket', 1)" );
@@ -720,35 +732,47 @@ function transferir_ticket($id_usuario_ticket, $id_nuevo_tecnico, $con){
 
 }
 
+if ( $_GET[accion] == 'puntuar_fase' ){
 
+	$sql = mysqli_query( $con, "UPDATE usuario_ticket_fase 
+															SET calificacion_fase = '$_POST[calificacion_fase]' 
+															WHERE id_usuario_ticket_fase = '$_POST[id_usuario_ticket_fase]'" );
 
-
-
-if($_GET[accion]=='puntuar_fase'){
-
-	$sql = mysqli_query($con, "UPDATE usuario_ticket_fase SET calificacion_fase='$_POST[calificacion_fase]' WHERE id_usuario_ticket_fase='$_POST[id_usuario_ticket_fase]'" );
-
-	if($sql){
+	if ( $sql ) { 
 	  echo json_encode("Ok");
-	}else{
+	} else {
 	  echo json_encode("error");
 	}
-
 }
 
+if ( $_GET[accion] == 'put_mensaje' ) {
+	$intIdUsuario = isset($_POST['id_usuario']) ? intval($_POST['id_usuario']) : 0;	
+	$intIdUsuarioTicket = isset($_POST['id_usuario_ticket']) ? intval($_POST['id_usuario_ticket']) : 0;
+	$strMensaje = isset($_POST['mensaje']) ? trim($_POST['mensaje']) : null;
 
-if($_GET[accion]=='put_mensaje'){
+	$strQuery = "INSERT INTO mensaje (id_usuario , id_usuario_ticket , mensaje ) 
+							 VALUES( {$intIdUsuario} , {$intIdUsuarioTicket} , '{$strMensaje}' )";
+	if ( mysqli_query($con, $strQuery ) ){
+		$strQuery = "SELECT a.id_usuario ,
+												b.username AS usuario , b.token_web AS tocken_usuario ,
+        								c.username AS tecnico , c.token_web AS tocken_tecnico
+								FROM usuario_ticket a
+								INNER JOIN usuario b ON a.id_usuario = b.id_usuario
+								LEFT JOIN usuario c ON a.id_tecnico = c.id_usuario 
+								WHERE a.id_usuario_ticket = {$intIdUsuarioTicket}";
+		$qTmp = mysqli_query($con , $strQuery);
+		$rTmp = mysqli_fetch_assoc($qTmp);
+		$strToken = ($rTmp["id_usuario"] == $intIdUsuario) ?  $rTmp["tocken_tecnico"] : $rTmp["tocken_usuario"];
+		$strDe = ($rTmp["id_usuario"] == $intIdUsuario) ?  $rTmp["usuario"] : $rTmp["tecnico"];
+		$strUrl = "/inicio?".$intIdUsuarioTicket;
 
-	$fecha= date("Y-m-d H:i:s");
-
-	$sql = mysqli_query($con, "INSERT INTO mensaje(id_usuario, id_usuario_ticket, mensaje, fecha, estado) VALUES('$_POST[id_usuario]', '$_POST[id_usuario_ticket]', '$_POST[mensaje]', '$fecha', 0)" );
-
-	if($sql){
+		if ( !empty($strToken) ) {
+			sendNotificacionFirebase("Nuevo mensaje de: {$strDe} " , $strMensaje , $strToken , $strUrl );
+		}
 	  echo json_encode("Ok");
-	}else{
+	} else {
 	  echo json_encode("error");
 	}
-
 }
 
 
@@ -860,9 +884,6 @@ if ( $_GET[accion] == 'enviar_ticket_transferida') {
 }
 
 if($_GET[accion]=='no_tomar_ticket'){
-
-	$fecha= date("Y-m-d H:i:s");
-
 	//datos tecnico
 	$exe = mysqli_query($con, "SELECT nombre_completo FROM usuario WHERE id_usuario={$_POST[id_tecnico]} ");
  	$row = mysqli_fetch_assoc($exe);
@@ -871,16 +892,20 @@ if($_GET[accion]=='no_tomar_ticket'){
  	$titulo= $nombre_tecnico." ha rechazado tu ticket";
  	$mensaje= "Por algún motivo ".$nombre_tecnico." no ha podido tomar tu ticket.";
 
- 	//enviamos notificacion
-	$sql = mysqli_query($con, "INSERT INTO notificacion(id_usuario, titulo, descripcion, creacion, accion, accion_key, estado) VALUES((SELECT utf.id_tecnico FROM usuario_ticket ut, usuario_ticket_fase utf WHERE  ut.id_usuario_ticket=utf.id_usuario_ticket AND ut.id_usuario_ticket='$_POST[id_usuario_ticket]' ORDER BY utf.fecha_inicio DESC LIMIT 1), '$titulo', '$mensaje', '$fecha', 'ver_ticket_all', '$_POST[id_usuario_ticket]', 1)");
-
-
-	if($sql){
+	 //enviamos notificacion
+	 $strQuery = "INSERT INTO notificacion(id_usuario, titulo, descripcion, accion, accion_key, estado) 
+	 							VALUES((SELECT utf.id_tecnico 
+								 				FROM usuario_ticket ut, usuario_ticket_fase utf 
+												WHERE  ut.id_usuario_ticket=utf.id_usuario_ticket 
+												AND ut.id_usuario_ticket='$_POST[id_usuario_ticket]' 
+												ORDER BY utf.fecha_inicio DESC LIMIT 1) ,
+								      '$titulo', '$mensaje', 'ver_ticket_all', '$_POST[id_usuario_ticket]', 1)";
+	$sql = mysqli_query($con, $strQuery );
+	if ( $sql ) {
 	  echo json_encode("Ok");
-	}else{
+	} else {
 	  echo json_encode("error");
 	}
-
 }
 
 mysqli_close($con);

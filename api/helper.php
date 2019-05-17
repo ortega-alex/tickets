@@ -1,4 +1,6 @@
 <?php
+    define("_URL" , "http://172.29.9.186");
+
     function setHistorial($id_usuario , $accion , $con){
         if ( !empty($id_usuario) && !empty($accion) ) {
             $strQuery = "INSERT INTO historial (id_usuario , accion)
@@ -10,13 +12,14 @@
         return false;
     }
 
-    function sendNotificacionFirebase($strTitulo , $strMensaje , $strToken) {
+    function sendNotificacionFirebase($strTitulo , $strMensaje , $strToken , $strUrl = '' ) {
         $ch = curl_init();
+
 
         $arr["data"]["title"] = $strTitulo;
         $arr["data"]["body"] = $strMensaje;
-        $arr["data"]["icon"] = "http://localhost:8082/tickets/public/img/ticket.png";
-        $arr["data"]["link"] = "http://localhost:3000";
+        $arr["data"]["icon"] = _URL.":8082/tickets/public/img/ticket.png";
+        $arr["data"]["link"] = _URL.":3000".$strUrl;
         $arr["to"] = $strToken;
 
         curl_setopt($ch, CURLOPT_URL,"https://fcm.googleapis.com/fcm/send");
@@ -53,8 +56,7 @@
             
             $mail->Host = "smtp.gmail.com"; 
             $mail->Username = "mortegalex27@gmail.com"; 
-            $mail->Password = "Alexander27@+*";
-            
+            $mail->Password = "Alexander27@+*";            
             
             $mail->Port = 465; // Puerto a utilizar
             $mail->From = "admin@ocacall.com"; // Desde donde enviamos (Para mostrar)
@@ -71,7 +73,7 @@
             $mail->Subject = "Sistena de tickets"; // Este es el titulo del email.
             $mail->Body = "<style>
                                 .container {
-                                    background-image: url(http://172.29.11.26/dev/tickets/fondo.jpg);
+                                    background-image: url("._URL."/dev/tickets/fondo.jpg);
                                     background-color: #cccccc;
                                     height: 750px;
                                     background-position: center;
@@ -99,7 +101,7 @@
                                     <p class='descripcion'>{$strAsunto}</p>
                                     <br>
                                     <br>
-                                    <p class='descripcion'>Este mensaje es automatico. visita <a href='http://localhost:3000'>Sistema de Tickets</a></p>
+                                    <p class='descripcion'>Este mensaje es automatico. visita <a href='"._URL.":3000'>Sistema de Tickets</a></p>
                                 </div>
                             </div>"; // Mensaje a enviar
             $mail->AltBody = "Hola mundo. Esta es la primer línean Acá continuo el mensaje"; // Texto sin html

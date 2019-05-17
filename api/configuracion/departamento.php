@@ -11,7 +11,16 @@ ini_set( "display_errors", 0);
 header('Access-Control-Allow-Origin: *'); 
 
 if ( $_GET[accion] == 'get' ) {
-	$sql = mysqli_query($con, "SELECT * FROM departamento ORDER BY departamento ");
+	
+	if ( $_GET['rol'] != 3 ) {
+		$_JOIN = "INNER JOIN departamento_puesto b ON a.id_departamento = b.id_departamento
+				  WHERE b.id_usuario = {$_GET['_usuario']}
+				  GROUP BY a.id_departamento"; 
+	}
+	$sql = mysqli_query($con, "SELECT a.id_departamento , a.departamento , a.estado ,a.imagen , a.creacion , a.ubicacion  
+							   FROM departamento a  
+							   {$_JOIN}
+							   ORDER BY a.departamento ");
 	$results=array();
 	while($v = mysqli_fetch_object($sql)){
 		$results[] = array(
@@ -153,37 +162,31 @@ if ( $_GET[accion] == 'estado_asignacion' ) {
 	}
 }
 
+if ( $_GET[accion] == 'asignaciones' ) {
 
-if($_GET[accion]=='asignaciones'){
-
-
-	$sql = mysqli_query($con, "SELECT * FROM departamento_puesto WHERE id_departamento='$_POST[id_departamento]'");
-
-
-	//Create an array with the results
+	if ( $_POST['rol'] != 3 ) {
+		$_JOIN = "INNER JOIN usuario b ON a.id_usuario = b.id_usuario AND b.id_rol NOT IN (3)";
+	}
+	$strQuery = "SELECT a.* 
+				 FROM departamento_puesto a
+				 {$_JOIN}
+				WHERE a.id_departamento = {$_POST['id_departamento']}";
+	
+	$sql = mysqli_query($con, $strQuery);
 	$results=array();
 	while($v = mysqli_fetch_object($sql)){
-	$results[] = array(
-	'id_cargo'=>($v->id_cargo),
-	'estado'=>($v->estado),
-	'creacion'=>($v->creacion),
-	'puesto'=>(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM puesto WHERE id_puesto=$v->id_puesto ")))),
-	'departamento'=>(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM departamento WHERE id_departamento=$v->id_departamento ")))),
-	'usuario'=>(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT id_usuario, username, email, nombre_completo, estado, id_configuracion, creacion FROM usuario WHERE id_usuario=$v->id_usuario ")))),
-
-	'estado_final'=>(estado_asignacion($v->id_cargo, $con)),
-	
-	);
-
+		$results[] = array(
+			'id_cargo'=>($v->id_cargo),
+			'estado'=>($v->estado),
+			'creacion'=>($v->creacion),
+			'puesto'=>(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM puesto WHERE id_puesto=$v->id_puesto ")))),
+			'departamento'=>(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM departamento WHERE id_departamento=$v->id_departamento ")))),
+			'usuario'=>(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT id_usuario, username, email, nombre_completo, estado, id_configuracion, creacion FROM usuario WHERE id_usuario=$v->id_usuario ")))),
+			'estado_final'=>(estado_asignacion($v->id_cargo, $con)),
+		);
 	}
-
 	echo json_encode($results);
-
-
-
 }
-
-
 
 if($_GET[accion]=='puestos'){
 

@@ -34,14 +34,16 @@ class inicio extends Component {
       <div style={{ display: "flex", flexDirection: "column", padding: "10px", width: "100%", height: "100%" }} >
         {this.modalDepartamento()}
         {this.modalNuevoDepartamento()}
-        <div style={{ textAlign: 'right' }}>
-          <Button
-            onClick={this.nuevoDepartamento.bind(this)}
-            style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
-          >
-            <Icon type="plus-circle" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
-          </Button>
-        </div>
+        { this.props.accesos['Nuevo_Departamento'] && 
+          <div style={{ textAlign: 'right' }}>
+            <Button
+              onClick={this.nuevoDepartamento.bind(this)}
+              style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
+            >
+              <Icon type="plus-circle" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
+            </Button>
+          </div>
+        }       
         <div style={{ textAlign: 'center' }}>
           <h3>Departamentos</h3>
           Selecciona un departamento para modificar su catálogo de puestos.
@@ -60,7 +62,6 @@ class inicio extends Component {
   }
 
   renderItem({ key, index, style }) {
-    console.log(index);
     return (
       <div key={key} style={[{ style }]}>
       </div>
@@ -158,18 +159,20 @@ class inicio extends Component {
         {(this.state.modal_Dpto) &&
           <div style={{ display: 'flex', flexDirection: 'row' }}>
             <div style={{ width: '10%', marginTop: '10%' }}>
-              <Button
-                onClick={this.solicitarEdicion.bind(this)}
-                style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
-              >
-                <span>
-                  <Tooltip title="Editar Departamento">
-                    <Icon type="edit" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
-                  </Tooltip>
-                </span>
-              </Button>
+              { this.props.accesos['Editar_Departamento'] && 
+                <Button
+                  onClick={this.solicitarEdicion.bind(this)}
+                  style={{ backgroundColor: 'transparent', border: 'none', borderColor: 'red', outline: 'none' }}
+                >
+                  <span>
+                    <Tooltip title="Editar Departamento">
+                      <Icon type="edit" style={{ color: '#3498DB', fontSize: 25, paddingRight: 10 }} />
+                    </Tooltip>
+                  </span>
+                </Button>
+              }             
             </div>
-            <VerDepartamento _usuario={this.props._usuario} getDepartamentos={this.getDepartamentos.bind(this)} id_departamento={departamento_edicion.id_departamento} Server={Server} />
+            <VerDepartamento rol={this.props.rol} accesos={this.props.accesos} _usuario={this.props._usuario} getDepartamentos={this.getDepartamentos.bind(this)} id_departamento={departamento_edicion.id_departamento} Server={Server} />
           </div>
         }
       </Rodal>
@@ -253,10 +256,10 @@ class inicio extends Component {
   }
 
   getDepartamentos() {
-    let Server = String(this.props.Server);
+    const { Server , rol , _usuario } = this.props;
     this.setState({ cargando: true });
 
-    http._GET(Server + 'configuracion/departamento.php?accion=get').then(res => {
+    http._GET(Server + 'configuracion/departamento.php?accion=get&rol='+rol+"&_usuario="+_usuario).then(res => {
       if (res !== 'error') {
         let resultado = [];
         for (const objecto of res) {

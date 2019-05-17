@@ -7,13 +7,15 @@ import http from '../services/http.services';
 
 const TabPane = Tabs.TabPane;
 var moment = require('moment');
+require("moment/min/locales.min");
+moment.locale('es');
 
 //const id_usuario = '3';
 
 class inicio extends Component {
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       notificaciones: [],
       modal_PrevisualizarTicket: false,
@@ -31,31 +33,40 @@ class inicio extends Component {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: "10px", height: '100%', width: '100%' }}>
         {this.modalPrevisualizarTicket()}
-        <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
-          <div style={{ display: 'flex', flex: 1, width: '30%', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', width: '100%',  paddingLeft : '1%'}}>
+          <div style={{ display: 'flex', flex: 1, width: '30%' }}>
             {this.state.notificaciones.length > 0 &&
               <Dropdown overlay={this.renderNotificaciones()} placement='bottomRight'
                 onVisibleChange={this.handleVisibleChange}
                 visible={this.state.visible_notificaciones}
               >
-                <Icon type="notification" style={{ fontSize: 20 }} />
+                {/*<Icon type="notification" style={{ fontSize: 20 }} />*/}
+                <img src={require("../media/alarma.png")} /> 
               </Dropdown>
             }
           </div>
         </div>
         <Tabs defaultActiveKey={'1'} style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', }}>
-          <TabPane forceRender key={1} tab={"Tickets Abiertos"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_abiertas' />
-          </TabPane>
-          <TabPane key={2} tab={"Tickets Cerradas"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_cerradas' />
-          </TabPane>
-          <TabPane key={3} tab={"Soporte - Tickets Abiertas"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_abiertas_soporte' />
-          </TabPane>
-          <TabPane key={4} tab={"Soporte - Tickets Cerradas"}>
-            <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} modalidad='tickets_cerradas_soporte' />
-          </TabPane>
+          { this.props.accesos['tickets_abiertos'] &&
+            <TabPane forceRender key={1} tab={"Tickets Abiertos"}>
+              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_abiertas' />
+            </TabPane>
+          }
+          { this.props.accesos['tickets_cerrados'] &&
+            <TabPane key={2} tab={"Tickets Cerradas"}>
+              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_cerradas' />
+            </TabPane>
+          }
+          { this.props.accesos['tickets_abiertos_soporte'] &&
+            <TabPane key={3} tab={"Soporte - Tickets Abiertas"}>
+              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_abiertas_soporte' />
+            </TabPane>
+          }
+          { this.props.accesos['tickets_cerrados_soporte'] &&
+            <TabPane key={4} tab={"Soporte - Tickets Cerradas"}>
+              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_cerradas_soporte' />
+            </TabPane>
+          }
         </Tabs>
       </div>
     );

@@ -11,10 +11,11 @@
         $arrCopia = isset($_POST['copia']) ?  json_decode($_POST['copia'] , true) : [];
 
         if ( !empty($strPara) && !empty($strMensaje) ) {
-            enviarCoreoElectronico($strPara , $strMensaje , $arrCopia);	
+            //enviarCoreoElectronico($strPara , $strMensaje , $arrCopia);	
             print("ok");
         } else {
             print("err");
         } 
-    }  
+    }   
+    
 ?>

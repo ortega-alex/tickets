@@ -25,7 +25,7 @@
                     echo json_encode('nosesion');
                } else {  
                     $usuarioactual=$_SESSION['usuarioactual'];
-                    $strQuery = "SELECT a.id_usuario , a.nombre_completo , a.email , a.id_rol , 
+                    $strQuery = "SELECT a.id_usuario , a.nombre_completo , a.email , a.id_rol , a.soporte ,
                                         c.accion ,
                                         d.modulo
                               FROM usuario a
@@ -42,6 +42,7 @@
                          $jsondata['nombre_completo'] = $rTmp['nombre_completo'];
                          $jsondata['email'] = $rTmp['email'];
                          $jsondata['id_rol'] = $rTmp['id_rol'];
+                         $jsondata['soporte'] = $rTmp['soporte'];
                          $jsondata['accesos'][$rTmp['accion']] = $rTmp['accion'];
                          $jsondata['modulos'][$rTmp['modulo']] = $rTmp['modulo'];
                     }   
