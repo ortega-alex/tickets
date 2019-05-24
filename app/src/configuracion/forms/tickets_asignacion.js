@@ -53,7 +53,7 @@ class tickets_asignacion extends Component {
             :
             <Layout style={{ height: '100%', width: '100%', overflowY: 'auto', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }}>
               Cargando tickets...
-                </Layout>
+            </Layout>
           }
         </Layout>
         <div style={{ display: 'flex', flexDirection: 'row', height: '10%', alignItems: 'center', justifyContent: 'flex-end' }}>
@@ -81,7 +81,7 @@ class tickets_asignacion extends Component {
           </div>
           <Button onClick={this.guardarPerfilTicketsAsignacion.bind(this)} disabled={!this.state.cambios} type="primary" htmlType="button" style={{ display: 'flex', marginRight: 30, width: '40%', height: '90%', justifyContent: 'center' }}>
             Guardar Cambios
-           </Button>
+          </Button>
         </div>
       </div>
     )
@@ -100,15 +100,15 @@ class tickets_asignacion extends Component {
   }
 
   guardarPerfilTicketsAsignacion() {
-    const { Server , _usuario , item , id_cargo , id_puesto} = this.props;
+    const { Server, _usuario, item, id_cargo, id_puesto } = this.props;
     this.setState({ cargando: true, cambios: false });
 
     var data = new FormData();
     data.append('id_cargo', id_cargo);
     data.append('id_puesto', id_puesto);
     data.append('perfil', JSON.stringify(this.state.tickets_seleccionadas));
-    data.append('_usuario' , _usuario);
-    data.append('item' , JSON.stringify(item));
+    data.append('_usuario', _usuario);
+    data.append('item', JSON.stringify(item));
 
     http._POST(Server + 'configuracion/usuario.php?accion=guardar_perfil_tickets_cargo', data).then(res => {
       if (res !== 'error') {

@@ -50,8 +50,8 @@ if($_GET[accion]=='nuevo'){
 					 VALUES ('{$strNombre}')";
 		if (mysqli_query($con , $strQuery)) {
 			$id_perfil_permisos = mysqli_insert_id($con);
-			$strQuery = "INSERT INTO puesto(puesto, estado, creacion , id_perfil_permisos) 
-						 VALUES('{$strNombre}', '{$intEstado}', '{$fecha}' , {$id_perfil_permisos})";
+			$strQuery = "INSERT INTO puesto(puesto, estado, id_perfil_permisos) 
+						 VALUES('{$strNombre}', '{$intEstado}', {$id_perfil_permisos})";
 			if (mysqli_query($con , $strQuery)) {
 				$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';
 				setHistorial($intUsuario , "Nuevo puesto: {$strNombre} , Estado: {$strEstado}" , $con);
@@ -304,6 +304,13 @@ if($_GET[accion]=='cambiar_estado_soporte'){
 						b.soporte = {$intEstado}
 					 WHERE a.id_puesto = {$intIdPuesto}";
 		if ( mysqli_query($con , $strQuery) ) {
+
+			$strQuery = "UPDATE usuario 
+						 SET soporte = {$intEstado} 
+						 WHERE id_usuario IN(SELECT id_usuario 
+											FROM departamento_puesto 
+											WHERE id_puesto = {$intIdPuesto})";
+			mysqli_query($con , $strQuery);
 			$strEstado = ($intEstado == 0) ? 'Baja' : 'Alta';
 			setHistorial($intUsuario , "Actualización como soporte del puesto : {$strPuesto} , se a dado de {$strEstado}." , $con);
 			echo json_encode("Ok");

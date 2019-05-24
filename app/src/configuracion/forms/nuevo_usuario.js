@@ -79,7 +79,7 @@ class nuevo_usuario extends Component {
               )}
             </FormItem>
 
-            <FormItem label="Rol Usuario"
+            <FormItem label="Nivel de Acceso"
                   {...formItemLayout}
                 >
                 {getFieldDecorator('id_rol', {

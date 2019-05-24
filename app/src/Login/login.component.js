@@ -16,7 +16,6 @@ class Login extends Component {
 
     render() {
         const { getFieldDecorator } = this.props.form;
-
         return (
             <div className="login-view">
                 <Form ref={ref => this.formulariote = ref} onSubmit={this.acceder.bind(this)}>

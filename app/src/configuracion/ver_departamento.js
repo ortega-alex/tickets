@@ -31,7 +31,6 @@ class ver_departamento extends Component {
       cargando: false,
       tab: 1,
     }
-    console.log(this.props);
   }
 
   componentDidMount() {
@@ -151,7 +150,6 @@ class UsuariosAsignados extends Component {
       searchText: '',
       edit_asignacion_usuario: undefined
     }
-    console.log("usuario asignacion" , this.props);
   }
 
   componentDidMount() {

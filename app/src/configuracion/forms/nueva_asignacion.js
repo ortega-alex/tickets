@@ -18,7 +18,6 @@ class nueva_asignacion extends Component {
       check_asignacion_activa: true,
       nuevo_actualizar_permisos: true,
     }
-    console.log(this.props);
   }
 
   componentDidMount() {
@@ -103,7 +102,7 @@ class nueva_asignacion extends Component {
             <div style={{ marginTop: 10 }}>
               <FormItem
                 {...formItemLayout}
-                label="Puesto"
+                label="Perfil Usuario"
                 labelCol={{ span: 5 }}
                 wrapperCol={{ span: 12 }}
               >

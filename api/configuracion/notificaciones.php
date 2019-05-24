@@ -13,6 +13,7 @@
 		$strQuery = "SELECT * 
 					 FROM notificacion 
 					 WHERE id_usuario={$_POST[id_usuario]} 
+					 AND estado = 1
 					 ORDER BY creacion DESC
 					 LIMIT 10 OFFSET {$intNum}";
 		$sql = mysqli_query($con, $strQuery);

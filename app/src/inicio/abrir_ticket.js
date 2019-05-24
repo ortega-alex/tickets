@@ -38,8 +38,6 @@ class abrir_ticket extends Component {
       cambiar_valores: false,
       files: FileList
     }
-    
-    console.log(this.props);
   }
 
   componentWillMount() {
@@ -53,7 +51,7 @@ class abrir_ticket extends Component {
         {this.modalTicket()}
         <div style={{ display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
           {(this.state.texto_busqueda !== undefined) &&
-            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'center', }}>
+            <div style={{ justifyContent: 'center', }}>
               <Search
                 style={{ width: 300, height: 33, marginLeft: 100, }}
                 defaultValue={this.state.texto_busqueda}
@@ -61,6 +59,7 @@ class abrir_ticket extends Component {
                 onSearch={value => this.bucarTicket(value)}
                 enterButton
               />
+              <p style={{ padding : '2px' , fontWeight : 'bold'}}>Seleccione el ticket a crear</p>
             </div>
           }
          {/* <div style={{ display: 'flex', flex: 1, flexDirection: 'row', justifyContent: 'flex-start' }}>
@@ -166,10 +165,10 @@ class abrir_ticket extends Component {
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', height: '100%', width: '100%' }}>
             <Form onSubmit={this.aperturarTicket.bind(this)} style={{ height: "100%" }}>
               <div style={{ display: 'flex', flexDirection: 'row', height: '50%', width: '100%' }}>
-                <div style={{ display: 'flex', width: '70%', height: '80%', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }}>
+                <div style={{ display: 'flex', width: '50%', height: '70%', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }}>
                 { this.state.departamentos_usuario && 
                   <div style={{ display: 'flex', height: '15%', width: '100%' }}>
-                    <FormItem  style={{ width: '25%' , paddingTop:'10%' }}>
+                    <FormItem  style={{ width: '30%' , paddingTop:'25%' }}>
                       {getFieldDecorator('departamento', {
                         rules: [{ required: true, message: 'Por favor selecciona' }], initialValue: (this.state.frm_departamento ? String(this.state.frm_departamento) : undefined)
                       })(
@@ -179,7 +178,7 @@ class abrir_ticket extends Component {
                           placeholder="Selecciona Departamento"
                           optionFilterProp="children"
                           onChange={(seleccion) => { this.getUsuariosDepartamento(seleccion); this.setState({ frm_departamento: seleccion }) }}
-                          style={{ width: '80%' }}
+                          style={{ width: '100%' }}
                           filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                         >
                           {this.state.departamentos_usuario.map((departamento) => (
@@ -192,23 +191,23 @@ class abrir_ticket extends Component {
                   </div>
                 }
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', lineHeight: 0 }}>
+                  <div style={{  height: '75%' , display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', lineHeight: 0  , paddingTop: '2%'}}>
                     {(this.state.ticket_nueva !== undefined) && <h2 style={{ textAlign: 'center' }}>{this.state.ticket_nueva.nombre_ticket}</h2>}
                     {(this.state.ticket_nueva !== undefined) && <div style={{ textAlign: 'center' }}>{this.state.ticket_nueva.categoria.categoria}>{this.state.ticket_nueva.sub_categoria.sub_categoria}</div>}
                   </div>
                   {(this.state.ticket_nueva != undefined) &&
-                    <div style={{ display: 'flex', width: '100%', height: '100%', padding: '20px', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', textAlign: 'justify', whiteSpace: 'pre-wrap', marginTop: 20, backgroundColor: '#ECF0F1', borderRadius: 7 }}>
+                    <div style={{ display: 'flex', width: '100%', height: '75%', padding: '20px', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', textAlign: 'justify', whiteSpace: 'pre-wrap', marginTop: 50, backgroundColor: '#ECF0F1', borderRadius: 7 }}>
                       {this.state.ticket_nueva.descripcion}
                     </div>
                   }
                 </div>
-                <div style={{ display: 'flex', width: '30%', height: '100%', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                  <div style={{ marginTop: 30 }}>
+                <div style={{ display: 'flex', width: '50%', height: '100%', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <div style={{ marginTop: 30 ,  width: '100%'}}>
                     <FormItem label="Inf. Adicional:"
                       style={{ display: 'flex', flex: 1, flexDirection: 'column', textAlign: 'center', width: '100%', height: '100%', alignItems: 'center' }}
                     >
                       {getFieldDecorator('inf_adicional', { rules: [{ required: false }] })(
-                        <TextArea rows={4} style={{ height: '150px' }} placeholder="Si deseas proporciona información adicional del problema." />
+                        <TextArea rows={4} style={{ height: '150px' , width:'300px'}} placeholder="Si deseas proporciona información adicional del problema." />
                       )}
                     </FormItem>
                   </div>

@@ -121,7 +121,7 @@ class Dashboad extends Component {
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                             onClick={this.handleModal}>
                             <XAxis dataKey="usuario" />
-                            <YAxis />
+                            <YAxis type="number" domain={( select == 0 ) ? [0, indicadores["abiertos"]] : ( select == 1 ) ? [0 , indicadores["cerrados"]]  :  [0, 100] }/>
                             <Tooltip />
                             <Legend />
                             <Bar dataKey={select != 2 ? 'tickers' : 'porcentaje'} fill={color[select]} />
@@ -177,7 +177,6 @@ class Dashboad extends Component {
                                     defaultChecked={todos} 
                                     onChange={(valor) => { 
                                         this.setState({todos : valor}) ; 
-                                        console.log(todos , valor);
                                         this.getIndicadores(id_departamento , null , valor);
                                         this.getEstadistica(select , id_departamento , null , valor);
                                     }} />
@@ -241,7 +240,7 @@ class Dashboad extends Component {
     }
 
     handleModal(e) {
-        if (e != null && this.props.accesos['detalle_grafica']) {
+        if (e != null && e["activePayload"] && this.props.accesos['detalle_grafica']) {
             const { Server, _usuario , rol} = this.props;
             const { tecnico, estado } = e["activePayload"][0]["payload"];
             const { select, id_departamento } = this.state;
@@ -298,15 +297,17 @@ class Dashboad extends Component {
                 onClose={() => { this.setState({ modal_verTicket: false }) }}
                 closeMaskOnClick
                 showCloseButton={true}
-                customStyles={{ borderRadius: 10, height: '67%', width: '50%' }}
+                customStyles={{ borderRadius: 10, height: '70%', width: '70%' }}
             >
                 {(this.state.modal_verTicket) &&
                     <div style={{ width: '100%', height: '100%' }}>
                         <Ticket_Vista_All
+                            accesos={this.props.accesos}
                             getTicketsAbiertas={this.getTicketsAbiertas.bind(this)}
                             Server={Server}
                             modalidad={modalidad}
-                            id_usuario_ticket={id_usuario_ticket} id_usuario={_usuario} cerrarModalVerTicket={this.cerrarModalVerTicket.bind(this)} />
+                            id_usuario_ticket={id_usuario_ticket} id_usuario={_usuario} cerrarModalVerTicket={this.cerrarModalVerTicket.bind(this)} 
+                        />
                     </div>
                 }
             </Rodal>

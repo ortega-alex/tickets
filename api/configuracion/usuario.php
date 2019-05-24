@@ -13,19 +13,17 @@ ini_set( "display_errors", 0);
 header('Access-Control-Allow-Origin: *'); 
 
 if ( $_GET[accion]=='get' ) {
-	$sql = mysqli_query($con, "SELECT * FROM usuario ORDER BY nombre_completo ");
-	//Create an array with the results
+	$strQuery = "SELECT id_usuario , username , email , nombre_completo 
+				 FROM usuario 
+				 ORDER BY nombre_completo";
+	$qTmp = mysqli_query($con, $strQuery);
 	$results=array();
-	while($v = mysqli_fetch_object($sql)){
+	while($rTpm = mysqli_fetch_object($qTmp)){
 		$results[] = array(
-			'id_usuario'=>($v->id_usuario),
-			'username'=>($v->username),
-			'password'=>($v->password),
-			'email'=>($v->email),
-			'nombre_completo'=>($v->nombre_completo),
-			'estado'=>($v->estado),
-			'id_configuracion'=>($v->id_configuracion),
-			'creacion'=>($v->creacion),
+			'id_usuario'=>($rTpm->id_usuario),
+			'username'=>($rTpm->username),
+			'email'=>($rTpm->email),
+			'nombre_completo'=>($rTpm->nombre_completo)
 		);
 	}
 	echo json_encode($results);
@@ -205,11 +203,23 @@ if ( $_GET[accion] == 'asignar' ) {
 				 AND id_usuario = {$intIdUsuario}";
 				
 	$qTmp = mysqli_query($con, $strQuery);
-	if ( mysqli_num_rows($qTmp) == 0 ||  $intEdit == 1 ) {		
+	if ( mysqli_num_rows($qTmp) == 0 ||  $intEdit == 1 ) {
+
+		$strQuery = "SELECT id_perfil_permisos FROM puesto WHERE id_puesto = {$intIdPuesto}";
+		$qTmp = mysqli_query($con , $strQuery);
+		$idPerfilPermisos = mysqli_fetch_assoc($qTmp);
+		
+		
 		if ( $intEdit == 0 ) {
 			$strQuery = "INSERT INTO departamento_puesto (id_puesto, id_departamento, id_usuario, estado) 
 						 VALUES({$intIdPuesto}, {$intIdDepartamento}, {$intIdUsuario}, {$_POST[activo]})";
 		} else {
+			
+			$strQuery = "DELETE FROM usuario_permisos 
+						 WHERE id_perfil_permisos = {$idPerfilPermisos['id_perfil_permisos']}
+						 AND id_usuario = {$intIdUsuario}";
+			mysqli_query($con , $strQuery);
+			
 			$strQuery = "DELETE FROM tickets_cargo WHERE id_cargo = {$intIdCargo}";
 			mysqli_query($con , $strQuery);
 			$strQuery = "DELETE FROM tickets_soporte WHERE id_cargo = {$intIdCargo}";
@@ -228,6 +238,16 @@ if ( $_GET[accion] == 'asignar' ) {
 			$intIdCargo = ($intEdit == 0) ? $lastid=mysqli_insert_id($con) : $intIdCargo;
 
 			if ( intval($_POST[nuevo_actualizar_permisos]) == 1 ) {
+				//perfil permisos
+				$strQuery = "SELECT id_accion FROM perfil_permiso WHERE id_perfil_permisos = {$idPerfilPermisos['id_perfil_permisos']}";
+				$qTmp = mysqli_query($con, $strQuery);
+
+				while ( $rTmp = mysqli_fetch_object($qTmp) ) {
+					$strQuery = "INSERT INTO usuario_permisos ( id_accion , id_usuario , id_perfil_permisos ) 
+								 VALUES( {$rTmp->id_accion} , {$intIdUsuario} ,  {$idPerfilPermisos['id_perfil_permisos']} ) ";
+					mysqli_query($con , $strQuery);
+				}
+
 				/////perfil tickets puesto
 				$strQuery = "SELECT id_ticket
 							 FROM perfil_tickets 
@@ -244,6 +264,10 @@ if ( $_GET[accion] == 'asignar' ) {
 							 FROM perfil_tickets_soporte 
 							 WHERE id_puesto = {$intIdPuesto} ";
 				$qTmp = mysqli_query($con, $strQuery);
+				if ( mysqli_num_rows($qTmp) > 0 ) {
+					$strQuery = "UPDATE usuario SET soporte = 1 WHERE id_usuario = {$intIdUsuario}";
+					mysqli_query($con , $strQuery);
+				}
 				while ( $rTmp = mysqli_fetch_object($qTmp) ) {
 					$strQuery = "INSERT INTO tickets_soporte(id_cargo, id_ticket, estado) 
 								 VALUES( {$intIdCargo} , {$rTmp->id_ticket} , 1) ";
@@ -260,6 +284,8 @@ if ( $_GET[accion] == 'asignar' ) {
 								 VALUES( {$intIdUsuario} , {$rTmp->id_ticket} 5, 1)";
 					mysqli_query($con, $strQuery );
 				}
+
+
 			}
 
 			$strQuery = "SELECT b.username , c.departamento
@@ -318,50 +344,35 @@ if($_GET[accion]=='get_tickets_asignacion'){
 	echo json_encode($results);
 }
 
-if($_GET[accion]=='get_tickets_soporte'){
-
-	$sql="";
-	$results=array();
-
-	if($_POST[tipo]=='asignacion'){
-
-		$sql = mysqli_query($con, "SELECT * FROM tickets_soporte WHERE id_cargo='$_POST[id_cargo]'");
-
+if ( $_GET[accion] == 'get_tickets_soporte' ) {
+	$results = array();
+	if ( $_POST[tipo] == 'asignacion' ) {
+		$strQuery = "SELECT * FROM tickets_soporte WHERE id_cargo={$_POST[id_cargo]}";
+		$sql = mysqli_query($con, $strQuery );
 		while($v = mysqli_fetch_object($sql)){
-		$results[] = array(
-			'id_ticket'=>($v->id_ticket),
-			'id_cargo'=>($v->id_cargo),
-			'estado'=>($v->estado),
-			'creacion'=>($v->creacion),
-		);
-
+			$results[] = array(
+				'id_ticket'=>($v->id_ticket),
+				'id_cargo'=>($v->id_cargo),
+				'estado'=>($v->estado),
+				'creacion'=>($v->creacion),
+			);
 		}
-
 	}
 
 	if($_POST[tipo]=='global'){
-
-		$sql = mysqli_query($con, "SELECT * FROM tickets_soporte_global WHERE id_usuario='$_POST[id_usuario]' ");
-
+		$strQuery = "SELECT * FROM tickets_soporte_global WHERE id_usuario = { $_POST[id_usuario]} ";
+		$sql = mysqli_query( $con , $strQuery );
 		while($v = mysqli_fetch_object($sql)){
-		$results[] = array(
-			'id_ticket'=>($v->id_ticket),
-			'id_usuario'=>($v->id_usuario),
-			'estado'=>($v->estado),
-			'creacion'=>($v->creacion),
-		);
-
-		}
-		
+			$results[] = array(
+				'id_ticket'=>($v->id_ticket),
+				'id_usuario'=>($v->id_usuario),
+				'estado'=>($v->estado),
+				'creacion'=>($v->creacion),
+			);
+		}		
 	}
-
-
-	
-
 	echo json_encode($results);
-
 }
-
 
 if($_GET[accion]=='guardar_perfil_tickets_cargo'){
 
@@ -501,28 +512,23 @@ if($_GET[accion]=='get_tickets_usuario'){
 	echo json_encode($results);
 }
 
-if($_GET[accion]=='get_departamentos_one'){
-
-
-	$sql = mysqli_query($con,  "SELECT d.departamento, dp.id_departamento FROM departamento_puesto dp, departamento d WHERE dp.id_departamento=d.id_departamento AND dp.id_usuario='$_POST[id_usuario]' GROUP BY dp.id_departamento ");
-
-
+if ( $_GET[accion] == 'get_departamentos_one' ) {
+	$strQuery = "SELECT d.departamento, dp.id_departamento 
+				 FROM departamento_puesto dp, departamento d 
+				 WHERE dp.id_departamento=d.id_departamento 
+				 AND dp.id_usuario='$_POST[id_usuario]'
+				 GROUP BY dp.id_departamento ";
+	$sql = mysqli_query($con, $strQuery );
 	//Create an array with the results
-	$results=array();
-	while($v = mysqli_fetch_object($sql)){
-	$results[] = array(
-	'id_departamento'=>($v->id_departamento),
-	'departamento'=>($v->departamento),
-	
-	);
-
+	$results = array();
+	while ( $v = mysqli_fetch_object($sql) ) {
+		$results[] = array(
+			'id_departamento'=>($v->id_departamento),
+			'departamento'=>($v->departamento),	
+		);
 	}
-
 	echo json_encode($results);
-
 }
-
-
 
 if($_GET[accion]=='get_usuarios_departamento_one'){
 
@@ -545,11 +551,37 @@ if($_GET[accion]=='get_usuarios_departamento_one'){
 
 }
 
-
+if ( $_GET[accion] == 'get_ticket_por_usuario' ) {
+	$intIdUsuarioTicket = isset($_GET['id_ticket']) ? intval($_GET['id_ticket']) : 0;
+	$res["err"] = "true";
+	if ( $intIdUsuarioTicket > 0 ) {
+		$strQuery = "SELECT a.nombre_completo  ,
+							b.id_usuario_ticket,  b.nivel_prioridad, b.creacion, b.programada, b.fecha_programada, b.info_adicional , b.correlativo , 
+							b.estado, b.id_calificacion ,
+							c.id_ticket,   c.nombre_ticket,   c.descripcion, 
+							e.departamento ,
+							f.puesto,
+							IF ( b.id_tecnico IS NULL , 'Sin Asignar' ,   g.nombre_completo  ) AS nombre_tecnico
+					FROM usuario a 
+					INNER JOIN usuario_ticket b ON a.id_usuario = b.id_usuario  
+					INNER JOIN ticket c ON b.id_ticket = c.id_ticket 
+					INNER JOIN departamento_puesto d ON b.id_cargo = d.id_cargo
+					INNER JOIN departamento e ON d.id_departamento = e.id_departamento 
+					INNER JOIN puesto f ON d.id_puesto = f.id_puesto 
+					LEFT JOIN usuario g ON b.id_tecnico = g.id_usuario
+					WHERE b.id_usuario_ticket = {$intIdUsuarioTicket}";
+		$qTmp = mysqli_query($con , $strQuery);
+		if ( mysqli_num_rows($qTmp) > 0 ) {
+			$res["err"] = "false";
+			$res["ticket"] = mysqli_fetch_assoc($qTmp);
+		}		
+	}
+	print(json_encode($res));
+}
 
 if ( $_GET[accion] == 'get_tickets_abiertas_usuario' ) {
 	$intRol = isset($_POST['rol']) ? intval($_POST['rol']) : 0;
-	if ( $intRol == 1 ) {
+	if ( $intRol <= 1 ) {
 		$_WHERE = "WHERE b.id_usuario = {$_POST['id_usuario']}";
 	}
 
@@ -629,7 +661,7 @@ if ( $_GET[accion] == 'get_tickets_cerradas_usuario' ) {
 	$fecha_fin = $fecha->format('Y-m-d')." 23:59:59";
 
 	$intRol = isset($_POST['rol']) ? intval($_POST['rol']) : 0;
-	if ( $intRol == 1 ) {
+	if ( $intRol <= 1 ) {
 		$_AND = "AND ut.id_usuario = {$_POST['id_usuario']}";
 	}
 
@@ -693,7 +725,7 @@ if($_GET[accion]=='get_tickets_abiertas_soporte'){
 		$date[2] = "AND d.fecha_programada BETWEEN '{$fecha_de}' AND '{$fecha_a}'";
 	}	
 
-	if ( $intRol == 1 ) {
+	if ( $intRol <= 1 ) {
 		$strQuery = "	SELECT a.nombre_completo  ,
 								b.id_usuario_ticket , b.estado , b.nivel_prioridad , b.creacion , b.programada , b.fecha_programada , 
 								b.info_adicional , b.correlativo ,
@@ -750,7 +782,7 @@ if($_GET[accion]=='get_tickets_abiertas_soporte'){
 						AND d.id_tecnico IS NULL
 						{$date[2]}
 						GROUP BY d.id_usuario_ticket
-					ORDER BY creacion DESC";
+					ORDER BY fecha_programada DESC";
 	} else {
 		$_AND = ($intRol == 2) ? "AND d.id_departamento IN (SELECT b.id_departamento 
 															FROM usuario a
@@ -772,7 +804,8 @@ if($_GET[accion]=='get_tickets_abiertas_soporte'){
 					WHERE b.estado = 0
 					{$date[0]}	
 					{$_AND}				
-					GROUP BY b.id_usuario_ticket";
+					GROUP BY b.id_usuario_ticket
+					ORDER BY b.fecha_programada";
 	}
 	
 	$sql = mysqli_query($con, $strQuery);

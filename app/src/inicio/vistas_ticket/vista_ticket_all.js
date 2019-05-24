@@ -27,6 +27,8 @@ class ver_ticket_abierta extends Component {
       modal_transferirTicket: false,
       soporte_compatible: [],
       id_usuario_transferir: undefined,
+      modal_cierreTicket: false,
+      descripcion: null
     }
   }
 
@@ -51,11 +53,12 @@ class ver_ticket_abierta extends Component {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', width: '100%' }}>
         {this.modalTransferirTicket()}
+        {this.modalCierreTicket()}
         {this.state.ticket &&
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', height: '100%', width: '100%' }}>
             <div style={{ display: 'flex', width: '100%', height: '100%' }}>
               <div style={{ display: 'flex', flexDirection: 'column', width: '55%', height: '100%', alignItems: 'center', }}>
-                {(parseInt(this.state.ticket.estado) == 0 && this.props.modalidad == 'soporte') &&
+                {(parseInt(this.state.ticket.estado) == 0 && this.props.modalidad == 'soporte' && this.props.accesos['Transferir_Tickets']) &&
                   <div style={{ display: 'flex', flex: 0, width: '100%', backgroundColor: 'transparent', justifyContent: 'flex-start' }}>
                     <Dropdown overlay={menu} trigger={'click'}>
                       <Button style={{ marginLeft: 8, border: 'none', outline: 'none', }}>
@@ -73,7 +76,7 @@ class ver_ticket_abierta extends Component {
 
                 {(this.state.ticket != undefined) &&
                   <div style={{ display: 'flex', width: '80%', height: '30%', overflowY: 'auto', padding: '20px', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', textAlign: 'justify', whiteSpace: 'pre-wrap', marginTop: 20, backgroundColor: '#ECF0F1', borderRadius: 7 }}>
-                    {this.state.ticket.descripcion}
+                    <b>Descripción del ticket:</b> {this.state.ticket.descripcion}
                   </div>
                 }
 
@@ -82,19 +85,32 @@ class ver_ticket_abierta extends Component {
                     <label style={{ fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Inf. Adicional</label>
                     {this.state.ticket.info_adicional && <label>{this.state.ticket.info_adicional}</label>}
                     {!this.state.ticket.info_adicional && <label style={{ width: '100%', textAlign: 'center' }}>Sin información adicional.</label>}
+                    { this.state.ticket.estado == 1 && 
+                      <div style={{ display: 'flex', flexDirection: 'column' , width: '100%' }}>
+                        <label style={{ fontWeight: 'bold', textAlign: 'center', width: '100%' }}>Cierre de ticket</label>
+                        {this.state.ticket.comentario_final && <label>{this.state.ticket.comentario_final}</label>}
+                      </div>
+                    }                   
                   </div>
                 }
               </div>
               <div style={{ flexDirection: 'column', display: 'flex', flex: 1, width: '45%', height: '100%' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'center' }}>
-                 
+
                   {(parseInt(this.state.ticket.estado) == 0) ?
                     <div style={{ backgroundColor: '#ECF0F1', display: 'flex', flex: 1, flexDirection: 'row', borderRadius: 13, padding: '7px', paddingLeft: '15px', alignItems: 'center', boxShadow: '0px 1px 4px #909497' }}>
                       <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'row', lineHeight: 1 }}>  <Icon type="fire" theme="filled" style={{ marginRight: 5, fontSize: 18, color: String(this.printFaseActual().color) }} /><h4 style={{ lineHeight: 1 }}>{this.printFaseActual().fase}</h4></div>
+                        <div style={{ display: 'flex', flexDirection: 'row', lineHeight: 1 }}>  
+                          { this.state.ticket.programada == 1 ?
+                            <Icon type="calendar" theme="filled" style={{ color: '#ffab00', fontSize: 18, marginRight: 5 }} />
+                            :
+                            <Icon type="fire" theme="filled" style={{ marginRight: 5, fontSize: 18, color: String(this.printFaseActual().color) }} />
+                          }               
+                          <h4 style={{ lineHeight: 1 }}>{this.printFaseActual().fase}</h4>
+                         </div>
                         <div style={{ fontSize: 9, }}>Soporte por <b> {this.printFaseActual().nombre_tecnico} </b></div>
                       </div>
-                      {this.props.modalidad == 'soporte' &&
+                      { (this.props.modalidad == 'soporte'  &&  moment().format("DD-MM-YYYY") >= moment(this.state.ticket.fecha_programada).format("DD-MM-YYYY"))   &&
                         <Tooltip title="Pasar ticket a la siguiente fase">
                           <Button onClick={this.siguienteFase.bind(this)} disabled={this.state.cargando} style={{ display: 'flex', flex: 0, backgroundColor: 'transparent', border: 'none', outline: 'none' }}>
                             <Icon type="caret-right" style={{ color: '#5D6D7E', fontSize: 30 }} />
@@ -167,20 +183,20 @@ class ver_ticket_abierta extends Component {
                         {this.state.ticket.procedimiento}
                       </div>
                     </TabPane>
-                    { this.state.ticket.archivos.length > 0 &&
-                    <TabPane key={4} tab={"Adjuntos"}>
-                      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', padding: '10px', overflowY: 'auto', fontSize: 13 }}>
-                        <h4 style={{ textAlign: 'center', marginBottom: 7 }}>Archivos adjuntos por el usuario</h4>
-                        {this.state.ticket.archivos.map((res , i) => {
-                          return(
-                            <Button style={{ marginLeft: 8, border: 'none', outline: 'none', }}>
-                              <a href={this.props.Server + 'download.php?ruta='+res.ruta+'&name='+res.nombre} target="_blank">{res.nombre}</a>
-                              <Icon type="download" style={{ fontSize: 23, color: '#909497' }} />
-                            </Button>
-                          )
-                        })}
-                      </div>
-                    </TabPane>
+                    {this.state.ticket.archivos.length > 0 &&
+                      <TabPane key={4} tab={"Adjuntos"}>
+                        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', padding: '10px', overflowY: 'auto', fontSize: 13 }}>
+                          <h4 style={{ textAlign: 'center', marginBottom: 7 }}>Archivos adjuntos por el usuario</h4>
+                          {this.state.ticket.archivos.map((res, i) => {
+                            return (
+                              <Button style={{ marginLeft: 8, border: 'none', outline: 'none', }}>
+                                <a href={this.props.Server + 'download.php?ruta=' + res.ruta + '&name=' + res.nombre} target="_blank">{res.nombre}</a>
+                                <Icon type="download" style={{ fontSize: 23, color: '#909497' }} />
+                              </Button>
+                            )
+                          })}
+                        </div>
+                      </TabPane>
                     }
                   </Tabs>
                 }
@@ -268,14 +284,20 @@ class ver_ticket_abierta extends Component {
     let Server = String(this.props.Server);
     var data = new FormData();
     data.append('id_usuario_ticket', this.state.ticket.id_usuario_ticket);
-    data.append('id_usuario', this.state.id_usuario_transferir);
-    data.append('id_tecnico', this.props.id_usuario);
+    data.append('id_tecnico', this.state.id_usuario_transferir);
+    data.append('id_usuario', this.props.id_usuario);
     this.setState({ cargando: true });
 
     http._POST(Server + 'configuracion/ticket.php?accion=enviar_ticket_transferida', data).then((res) => {
-      if (res == 'ok') {
+      if (res.err == 'false') {
         message.info("Se ha enviado la solicitud de transferencia.");
-        this.setState({ modal_transferirTicket: false, id_usuario_transferir: undefined , cargando: false });
+        this.setState({ modal_transferirTicket: false, id_usuario_transferir: undefined, cargando: false });
+        if (res.para) {
+          var data = new FormData();
+          data.append('para', res.para);
+          data.append('mensaje', res.mensaje);
+          http._POST(Server + 'mail.php?accion=set', data).catch(err => console.log(err));
+        }
       } else {
         message.error("Error al cargar Soporte Compatible.");
         this.setState({ cargando: false });
@@ -287,33 +309,76 @@ class ver_ticket_abierta extends Component {
   }
 
   siguienteFase() {
-    let Server = String(this.props.Server)
-    this.setState({ cargando: true })
-    var data = new FormData();
-    data.append('id_usuario', this.props.id_usuario);
-    data.append('id_usuario_ticket', this.state.ticket.id_usuario_ticket);
-
-    http._POST(Server + 'configuracion/ticket.php?accion=siguiente_fase', data).then((res) => {
-      if (res !== 'error') {
-        this.setState({ cargando: false });
-        this.props.getTicketsAbiertas();
-        this.cargarTicket(this.state.ticket.id_usuario_ticket);
-
-        var data = new FormData();
-        data.append('para', res.para);
-        data.append('mensaje', res.mensaje);
-        if (res.copia) {
-          data.append('copia', res.copia);
-        }
-        http._POST(Server + "mail.php?accion=set" , data).catch(err => console.log(err));
-      } else {
-        message.error("Error al cambiar de fase.");
-        this.setState({ cargando: false })
-      }
-    }).catch(err => {
-      message.error("Error al cambiar de fase." + err);
-      this.setState({ cargando: false });
+    var array = JSON.parse(this.state.ticket.fases);
+    var id_fase = 0;
+    array.forEach(element => {
+      id_fase = element.id_fase;
     });
+
+    if (this.state.descripcion == null && id_fase == 2) {
+      this.setState({ modal_cierreTicket: true });
+    } else {
+      let Server = String(this.props.Server)
+      this.setState({ cargando: true })
+      var data = new FormData();
+      data.append('id_usuario', this.props.id_usuario);
+      data.append('id_usuario_ticket', this.state.ticket.id_usuario_ticket);
+      data.append('id_fase', id_fase);
+      data.append('descipcion', this.state.descripcion);
+
+      http._POST(Server + 'configuracion/ticket.php?accion=siguiente_fase', data).then((res) => {
+        if (res !== 'error') {
+          this.setState({ cargando: false , modal_cierreTicket: false , descripcion : null });
+          this.props.getTicketsAbiertas();
+          this.cargarTicket(this.state.ticket.id_usuario_ticket);
+
+          var data = new FormData();
+          data.append('para', res.para);
+          data.append('mensaje', res.mensaje);
+          if (res.copia) {
+            data.append('copia', res.copia);
+          }
+          http._POST(Server + "mail.php?accion=set", data).catch(err => console.log(err));
+        } else {
+          message.error("Error al cambiar de fase.");
+          this.setState({ cargando: false })
+        }
+      }).catch(err => {
+        message.error("Error al cambiar de fase." + err);
+        this.setState({ cargando: false });
+      });
+    }
+  }
+
+  modalCierreTicket() {
+    return (
+      <Rodal
+        animation={'fade'}
+        visible={this.state.modal_cierreTicket}
+        onClose={() => { this.setState({ modal_cierreTicket: false , descripcion : null }) }}
+        closeMaskOnClick
+        showCloseButton={true}
+        customStyles={{ borderRadius: 10, height: '40%', width: '40%' }}
+      >
+        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '100%', height: '100%', justifyContent: 'center' }}>
+          <div style={{ height: '20%', width: '100%', textAlign: 'center', flexDirection: 'column', justifyContent: 'center', lineHeight: 1 }}>
+            <h3 style={{ textAlign: 'center', lineHeight: 1 }}>
+              Ingresa la información correspondiente del motivo del cierre del ticket!
+            </h3>
+          </div>
+          <TextArea rows={4} onChange={this.mesdnsajeCierreDeTicket.bind(this)} />
+          <div style={{ display: 'flex', height: "10%", justifyContent: 'center', marginTop: '2%' }}>
+            <Button disabled={this.state.cargando} onClick={this.siguienteFase.bind(this)} type="primary" style={{ display: 'flex', width: '60%', justifyContent: 'center' }}>
+              Cerrar Ticket
+            </Button>
+          </div>
+        </div>
+      </Rodal>
+    )
+  }
+
+  mesdnsajeCierreDeTicket(obj) {
+    this.setState({ descripcion: obj.target.value });
   }
 
   renderTiempos() {
@@ -397,7 +462,7 @@ class ver_ticket_abierta extends Component {
             <div style={{ display: 'flex', flex: 1, height: '100%', }}>
               {this.printMensajes()}
             </div>
-            {(parseInt(this.state.ticket.estado) == 0) &&
+            {(parseInt(this.state.ticket.estado) == 0 && this.printFaseActual().nombre_tecnico != "Sin Asignar") &&
               <div style={{ display: 'flex', flexDirection: 'row', height: '20%', marginBottom: 5, marginRight: 5, marginLeft: 5, border: '1px solid #ECF0F1', borderRadius: 13 }}>
                 <TextArea onChange={this.mesdnsajeSet.bind(this)} rows={4} style={{ width: '70%', height: '100%', backgroundColor: '#FBFCFC', borderRadius: 13, overflowY: 'hidden' }} placeholder="Enviar un mensaje" />
                 <Button disabled={this.state.cargando} onClick={this.enviarMensaje.bind(this)} type="primary" htmlType="submit" style={{ width: '30%', borderRadius: 13, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
@@ -464,7 +529,6 @@ class ver_ticket_abierta extends Component {
 
   printMensajes() {
     let mensajes = JSON.parse(this.state.ticket.mensajes);
-
     return (
       <div ref={(el) => { this.messagesEnd = el }} style={{ height: '100%', width: '100%', overflowY: 'auto', paddingTop: 10 }}  >
         {mensajes.map((mensaje, i) => (
@@ -494,7 +558,6 @@ class ver_ticket_abierta extends Component {
   }
 
   enviarMensaje() {
-
     if (this.state.mensaje_a_enviar) {
       let Server = String(this.props.Server);
       this.setState({ cargando: true });

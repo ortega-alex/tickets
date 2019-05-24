@@ -241,7 +241,6 @@ class ver_puesto extends Component {
           i++;
         }
 
-        //console.log(JSON.stringify(agrupado_final));
         this.setState({ tickets_all: agrupado_final });
         this.setState({ cargando: false });
       } else {
@@ -442,11 +441,11 @@ class PerfilTickets extends Component {
                   defaultExpandedKeys={this.state.tickets_seleccionadas}
                   onCheck={this.onCheck}
                 >
-                  {Object.values(this.props.tickets_all).map((item, index) => (
-                    <TreeNode title={Object.keys(item)} key={"cat" + Object.keys(item) + index} selectable={false} >
-                      {Object.entries(item[Object.keys(item)][0]).map((item, index) => (
-                        <TreeNode title={item[0]} key={"sub_cat" + item[0] + index} selectable={false} >
-                          {Object.entries(item[1]).map((item, index) => (
+                  {Object.values(this.props.tickets_all).map((categoria , i) => (
+                    <TreeNode title={Object.keys(categoria)} key={"cat" + Object.keys(categoria) + i} selectable={false} >
+                      {Object.entries(categoria[Object.keys(categoria)][0]).map((sub, j) => (
+                        <TreeNode title={sub[0]} key={"sub_cat" + sub[0] + j  } selectable={false} >
+                          {Object.entries(sub[1]).map((item) => (
                             <TreeNode title={item[1].nombre_ticket} key={item[1].id_ticket} selectable={false} />
                           ))}
                         </TreeNode>
@@ -463,7 +462,7 @@ class PerfilTickets extends Component {
             {this.state.tickets_seleccionadas == [] &&
               <Layout style={{ height: '100%', width: '100%', overflowY: 'auto', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }}>
                 Sin tickets creadas
-                  <label style={{ fontSize: 10 }}>Ve a Configuración>Tickets para crear una.</label>
+                <label style={{ fontSize: 10 }}>Ve a Configuración>Tickets para crear una.</label>
               </Layout>
             }
           </Layout>

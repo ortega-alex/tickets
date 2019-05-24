@@ -10,36 +10,22 @@ header('Content-Type: application/json');
 ini_set( "display_errors", 0); 
 header('Access-Control-Allow-Origin: *'); 
 
-
-
-if($_GET[accion]=='get_perfil'){
-
-
-	//tickets finalizadas hasta hoy
-	
-
-
+if ( $_GET[accion] == 'get_perfil' ) {
 	$sql = mysqli_query($con, "SELECT * FROM usuario ORDER BY nombre_completo ");
-
-
-	//Create an array with the results
 	$results=array();
-	while($v = mysqli_fetch_object($sql)){
-	$results[] = array(
-	'id_usuario'=>($v->id_usuario),
-	'username'=>($v->username),
-	'password'=>($v->password),
-	'email'=>($v->email),
-	'nombre_completo'=>($v->nombre_completo),
-	'estado'=>($v->estado),
-	'id_configuracion'=>($v->id_configuracion),
-	'creacion'=>($v->creacion),
-	);
-
+	while ( $v = mysqli_fetch_object($sql) ) {
+		$results[] = array(
+			'id_usuario' => ($v->id_usuario) ,
+			'username' => ($v->username) ,
+			'password' => ($v->password) ,
+			'email' => ($v->email) ,
+			'nombre_completo' => ($v->nombre_completo) ,
+			'estado' => ($v->estado) ,
+			'id_configuracion' => ($v->id_configuracion) ,
+			'creacion' => ($v->creacion) ,
+		);
 	}
-
 	echo json_encode($results);
-
 }
 
 if($_GET[accion]=='one'){

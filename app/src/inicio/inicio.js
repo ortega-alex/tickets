@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 import PestaniaTicketsUsuario from "./vistas_ticket/pestania_tickets_usuario";
 import Rodal from 'rodal';
-import { Menu, Icon, Dropdown, Tabs, message, Button } from 'antd';
+import { Menu,  Dropdown, Tabs, message, Button } from 'antd';
 import http from '../services/http.services';
 
 const TabPane = Tabs.TabPane;
@@ -10,10 +10,7 @@ var moment = require('moment');
 require("moment/min/locales.min");
 moment.locale('es');
 
-//const id_usuario = '3';
-
 class inicio extends Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -21,12 +18,13 @@ class inicio extends Component {
       modal_PrevisualizarTicket: false,
       ticket_abierta: undefined,
       visible_notificaciones: false,
-      num : 0
-    }
+      num : 0 ,
+      id_ticket : ( this.props.req ) ?  this.props.req.match.params.ticket : undefined
+    }    
   }
 
-  componentDidMount() {
-    this.getNotificaciones(0);
+  componentDidMount() {    
+    this.getNotificaciones(0);    
   }
 
   render() {
@@ -40,31 +38,30 @@ class inicio extends Component {
                 onVisibleChange={this.handleVisibleChange}
                 visible={this.state.visible_notificaciones}
               >
-                {/*<Icon type="notification" style={{ fontSize: 20 }} />*/}
                 <img src={require("../media/alarma.png")} /> 
               </Dropdown>
             }
           </div>
         </div>
         <Tabs defaultActiveKey={'1'} style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', }}>
-          { this.props.accesos['tickets_abiertos'] &&
+          { this.props.accesos['Ver_Tickets_Abiertos'] &&
             <TabPane forceRender key={1} tab={"Tickets Abiertos"}>
-              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_abiertas' />
+              <PestaniaTicketsUsuario accesos={this.props.accesos} id_ticket={this.state.id_ticket} Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_abiertas' />
             </TabPane>
           }
-          { this.props.accesos['tickets_cerrados'] &&
+          { this.props.accesos['Ver_Tickets_Cerrados'] &&
             <TabPane key={2} tab={"Tickets Cerradas"}>
-              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_cerradas' />
+              <PestaniaTicketsUsuario accesos={this.props.accesos} Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_cerradas' />
             </TabPane>
           }
-          { this.props.accesos['tickets_abiertos_soporte'] &&
+          { this.props.accesos['Ver_Tickets_Abiertos_Soporte'] &&
             <TabPane key={3} tab={"Soporte - Tickets Abiertas"}>
-              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_abiertas_soporte' />
+              <PestaniaTicketsUsuario accesos={this.props.accesos} id_ticket={this.state.id_ticket} Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_abiertas_soporte' />
             </TabPane>
           }
-          { this.props.accesos['tickets_cerrados_soporte'] &&
+          { this.props.accesos['Ver_Tickets_Cerrados_Soporte'] &&
             <TabPane key={4} tab={"Soporte - Tickets Cerradas"}>
-              <PestaniaTicketsUsuario Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_cerradas_soporte' />
+              <PestaniaTicketsUsuario accesos={this.props.accesos} Server={this.props.Server} id_usuario={this.props._usuario} rol={this.props.rol} modalidad='tickets_cerradas_soporte' />
             </TabPane>
           }
         </Tabs>
@@ -123,10 +120,10 @@ class inicio extends Component {
         //this.previsualizarTicket(notificacion.accion_key, 'normal')
         break;
       case "ver_ticket_aceptar":
-        this.previsualizarTicket(notificacion.accion_key, 'normal')
+        this.previsualizarTicket(notificacion.accion_key, 'normal' );
         break;
       case "ver_ticket_aceptar_transferida":
-        this.previsualizarTicket(notificacion.accion_key, 'solicitud')
+        this.previsualizarTicket(notificacion.accion_key, 'solicitud');
         break;
       case "y":
         break;
@@ -135,9 +132,6 @@ class inicio extends Component {
 
   handleVisibleChange = (flag) => {
     this.setState({ visible_notificaciones: flag });
-    /*if (flag) {
-      this.getNotificaciones()
-    }*/
   }
 
   handleCargarMas() {
@@ -154,9 +148,6 @@ class inicio extends Component {
 
     http._POST(Server + 'configuracion/notificaciones.php?accion=get_notificaciones_usuario&num='+n, data).then((res) => {
       if (res !== 'error') {
-        /*this.setState({ notificaciones: undefined }, () => {
-          this.setState({ notificaciones: res });
-        });*/
         var noti = this.state.notificaciones.concat(res);
         this.setState({ notificaciones: noti , cargando: false });
       } else {
@@ -169,7 +160,7 @@ class inicio extends Component {
     });
   }
 
-  previsualizarTicket(id, modo) {
+  previsualizarTicket(id, modo ) {
     this.setState({ visible_notificaciones: false, modo_previsualizar: modo })
     this.cargarTicketAbierta(id)
     this.setState({ modal_PrevisualizarTicket: true, modo_previsualizar: modo })
@@ -237,9 +228,6 @@ class inicio extends Component {
                   <label>Aceptar Ticket</label>
                 }
               </Button>
-              {/*<button class="js-push-button" disabled>
-                Enable Push Messages
-              </button>*/}
               {(this.state.modo_previsualizar == 'solicitud') &&
                 <Button disabled={this.state.cargando} type="danger" onClick={() => { this.noTomarTicket(this.state.ticket_abierta.id_usuario_ticket) }} style={{ display: 'flex', marginLeft: 20, width: '20%', justifyContent: 'center', borderColor: 'transparent' }}>
                   No Aceptar
@@ -281,21 +269,19 @@ class inicio extends Component {
     data.append('id_tecnico', this.props._usuario);
     data.append('modo', this.state.modo_previsualizar);
     http._POST(Server + 'configuracion/ticket.php?accion=tomar_ticket', data).then((res) => {
-      if (res !== 'error') {
+      if (res.err == 'false') {
         this.setState({ modal_PrevisualizarTicket: false });
         message.success("Se te ha asignado esta ticket!");
-        this.setState({ cargando: false });
-
-        var data = new FormData();
-        data.append('para', res.para);
-        data.append('mensaje', res.mensaje);
-        if (res.copia) {
-          data.append('copia', res.copia);
-        }
-        http._POST(Server + "mail.php?accion=set" , data).catch(err => console.log(err));
+        this.setState({ cargando: false });      
+        if (res.para) {
+          var data = new FormData();
+          data.append('para', res.para);
+          data.append('mensaje', res.mensaje);
+          http._POST(Server + "mail.php?accion=set" , data).catch(err => console.log(err));
+        }       
       } else {
-        message.error("Ha ocurrido un error.");
-        this.setState({ cargando: false });
+        message.error(res.msn);
+        this.setState({ modal_PrevisualizarTicket: false , cargando: false});
       }
     }).catch(err => {
       message.error("Ha ocurrido un error. " + err);
@@ -310,9 +296,16 @@ class inicio extends Component {
     data.append('id_usuario_ticket', id_usuario_ticket);
     data.append('id_tecnico', this.props._usuario);
     http._POST(Server + 'configuracion/ticket.php?accion=no_tomar_ticket' , data).then((res) => {
-      if (res !== 'error') {
+      if (res.err == 'false') {
         this.setState({ modal_PrevisualizarTicket: false })
         this.setState({ cargando: false });
+        if ( res.copia.length > 0 ) {
+          var data = new FormData();
+          data.append('para', res.copia[0]); 
+          data.append('mensaje', res.mensaje );
+          data.append('copia', res.copia );
+          http._POST(Server + 'mail.php?accion=set' , data).catch(err => console.log(err));
+        }
       } else {
         message.error("Ha ocurrido un error.");
         this.setState({ cargando: false });

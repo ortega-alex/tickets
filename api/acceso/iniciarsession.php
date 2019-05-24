@@ -8,7 +8,6 @@
   ini_set( "display_errors", 0); 
   header('Access-Control-Allow-Origin: *'); 
 
-
   //indicamos el formato y consulta a ejecutar
   $strQuery = "SELECT COUNT(*) AS NUMBER_OF_ROWS FROM usuario WHERE username='$_POST[username]' AND estado=1";
   $qTmp = mysqli_query($link, $strQuery);
@@ -21,6 +20,7 @@
 
     if ( $rTmp['NUMBER_ROW'] != 0 ) {
 
+      session_id(time());
       session_name("login");
       session_start();
 
@@ -43,7 +43,7 @@
                   GROUP BY c.id_accion
                   ORDER BY c.id_modulo";
       $qTmp = mysqli_query($link, $strQuery);
-      $jsondata = [];
+      $jsondata = array();
       while ( $rTmp = mysqli_fetch_array($qTmp) ) {
         $jsondata['id_usuario'] = $rTmp['id_usuario'];
         $jsondata['nombre_completo'] = $rTmp['nombre_completo'];
@@ -51,11 +51,11 @@
         $jsondata['id_rol'] = $rTmp['id_rol'];
         $jsondata['soporte'] = $rTmp['soporte'];
         $_SESSION["id_usuario"] = $rTmp['id_usuario'];
-        $_SESSION["nombre_completo"] = $rTmp['nombre_completo'];     
+        $_SESSION["nombre_completo"] = $rTmp['nombre_completo'];              
         $jsondata['accesos'][$rTmp['accion']] = $rTmp['accion'];
         $jsondata['modulos'][$rTmp['modulo']] = $rTmp['modulo'];
-      }      
-      $jsondata['session_id'] = session_id();
+      }            
+      $jsondata['session_id'] = session_id();     
 
       $strQuery = "SELECT b.id_departamento , b.departamento 
                     FROM departamento_puesto a

@@ -4,9 +4,16 @@
      ini_set( "display_errors", 0); 
      header('Access-Control-Allow-Origin: *'); 
 
+
+     $session = isset($_POST['session_id']) ? $_POST['session_id'] : null;
+     if ( $session == null || empty($session)) {
+          echo json_encode('nosesion');
+          exit();
+     }
+
      //iniciamos la sesión
      session_name("login"); //mismo nombre de sesion 
-     session_id($_POST[session_id]);
+     session_id($session);
      session_start();
 
      if (isset($_SESSION["autenticado"])) {
@@ -36,7 +43,7 @@
                               GROUP BY c.id_accion
                               ORDER BY c.id_modulo";
                     $qTmp = mysqli_query($link, $strQuery);
-                    $jsondata = [];
+                    $jsondata = array();
                     while ( $rTmp = mysqli_fetch_array($qTmp) ) {
                          $jsondata['id_usuario'] = $rTmp['id_usuario'];
                          $jsondata['nombre_completo'] = $rTmp['nombre_completo'];
@@ -63,11 +70,11 @@
                     echo json_encode($jsondata);
                }
           } else {
-          echo json_encode('nosesion');
+               echo json_encode('nosesion');
           }
           mysqli_close($link);
      } else {
-     echo json_encode('nosesion');
+          echo json_encode('nosesion');
      }
 
      mysqli_close($link);

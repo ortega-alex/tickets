@@ -32,7 +32,7 @@
         $rTmp = mysqli_fetch_assoc($qTmp);
         $puesto = ($rTmp['soporte']) == 0 ? "a.id_usuario" : "a.id_tecnico";
         
-        if ($intRol == 1) {
+        if ($intRol <= 1) {
             $strJOIN = "WHERE a.creacion BETWEEN '{$fecha_init}' AND '{$fecha_fin}'
                        AND {$puesto} = {$intUsuario}";
         } else {
@@ -85,14 +85,14 @@
         $andStado = ( $intStado == 2 ) ? 1 : $intStado;  
         $CON = ( $intStado != 2 ) ? "LEFT" : "INNER";  
         
-        if ( $intRol != 1 ) {
+        if ( $intRol > 1 ) {
             $strQuery = "INNER JOIN departamento_puesto d ON a.id_cargo = d.id_cargo
                          WHERE d.id_departamento IN (SELECT b.id_departamento 
                                                     FROM usuario a
                                                     INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario
                                                     WHERE a.id_usuario = {$intUsuario}
                                                     GROUP BY b.id_departamento)";
-            $_WHERE = ( $intTodos != 0 ) ? (($intRol == 2) ? $strQuery : "") : 
+            $_WHERE = ( $intTodos != 0 ) ? (($intRol == 2) ? $strQuery : "WHERE a.estado = {$andStado} ") : 
                     "INNER JOIN departamento_puesto d ON a.id_cargo = d.id_cargo 
                      WHERE a.creacion BETWEEN '{$fecha_init}' AND '{$fecha_fin}'                                         
                      AND d.id_departamento = {$intDepartamento} ";           
@@ -112,7 +112,7 @@
                     {$CON} JOIN usuario b ON a.id_tecnico = b.id_usuario                    
                     {$_WHERE}
                     AND a.estado = {$andStado} 
-                    GROUP BY b.id_usuario";       
+                    GROUP BY b.id_usuario";     
 
         $qTmp = mysqli_query($con , $strQuery);
 
@@ -196,7 +196,7 @@
                     INNER JOIN puesto b ON a.id_puesto = b.id_puesto
                     WHERE a.id_departamento = {$intDepartamento}";
         $qTmp = mysqli_query($con , $strQuery );
-        $arr = [];
+        $arr = array();
         $index = 0;
         while ( $rTmp = mysqli_fetch_array($qTmp) ) {
             $arr[$index]["id_puesto"] = $rTmp['id_puesto'];
