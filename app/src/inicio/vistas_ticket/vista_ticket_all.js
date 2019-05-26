@@ -28,7 +28,8 @@ class ver_ticket_abierta extends Component {
       soporte_compatible: [],
       id_usuario_transferir: undefined,
       modal_cierreTicket: false,
-      descripcion: null
+      descripcion: null ,
+      calificacion : []
     }
   }
 
@@ -141,13 +142,13 @@ class ver_ticket_abierta extends Component {
                       */}
                       {parseInt(this.state.ticket.estado) == 1 &&
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '5px', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: this.Numero(this.state.ticket.id_calificacion) == 0 ? '#3498DB' : '#F7DC6F' }}>
-                          {(this.Numero(this.state.ticket.id_calificacion) == 0) &&
+                          {(this.state.ticket.calificacion[0] && this.state.ticket.calificacion[0]['calificacion'] == null) &&
                             <div>
                               <h4 style={{ lineHeight: 0 }}>¡Ayudanos a mejorar!</h4>
                               <label style={{ fontSize: 10 }}>Contestando esta pequeña encuesta:</label>
                             </div>
                           }
-                          {this.Numero(this.state.ticket.id_calificacion) != 0 &&
+                          { (this.state.ticket.calificacion[0] && this.state.ticket.calificacion[0]['calificacion'] != null) &&
                             <div>
                               <h4 style={{ lineHeight: 0 }}>¡Gracias por ayudarnos a mejorar!</h4>
                               <label style={{ fontSize: 10, fontWeight: 'bold', color: '#9BDE53' }}><Icon type="check" /> Calificación enviada</label>
@@ -457,7 +458,7 @@ class ver_ticket_abierta extends Component {
   renderTabMensajes() {
     return (
       <div style={{ display: 'flex', flex: 1, flexDirection: 'column', height: '100%', width: '100%', backgroundColor: '#F0F3F4', borderRadius: 13, boxShadow: '0px 1px 4px #909497' }}>
-        {(this.props.modalidad == 'soporte' || parseInt(this.state.ticket.estado) == 0 || this.Numero(this.state.ticket.id_calificacion) > 0) &&
+        {(this.props.modalidad == 'soporte' || parseInt(this.state.ticket.estado) == 0 || (this.state.ticket.calificacion[0] && this.state.ticket.calificacion[0]['calificacion'] != null) ) &&
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '100%', height: '100%' }}>
             <div style={{ display: 'flex', flex: 1, height: '100%', }}>
               {this.printMensajes()}
@@ -472,26 +473,26 @@ class ver_ticket_abierta extends Component {
             }
           </div>
         }
-        {(this.Numero(this.state.ticket.id_calificacion) == 0 && parseInt(this.state.ticket.estado) == 1 && this.props.modalidad == 'usuario') &&
+        {( parseInt(this.state.ticket.estado) == 1 && this.props.modalidad == 'usuario' && this.state.ticket.calificacion[0] && this.state.ticket.calificacion[0]['calificacion'] == null) &&
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ height: '95%', width: '95%', backgroundColor: 'white', borderRadius: 13, boxShadow: '0px 1px 1px #909497' }}>
               <h4 style={{ marginTop: 7, textAlign: 'center' }}>Puntea lo siguiente</h4>
-              <div style={{ width: '100%', paddingLeft: '10px', paddingRight: '10px', lineHeight: 1.5, marginTop: 10 }}>
-                <label style={{ fontSize: 13 }}>1. Satisfacción general</label>
-                <div style={{ width: '100%', textAlign: 'center' }}><Rate onChange={(valor) => { this.setState({ frm_calificacion_general: valor }, () => { this.enviarCalificacion() }) }} value={this.state.frm_calificacion_general} style={{}} /></div>
-              </div>
-              <div style={{ width: '100%', paddingLeft: '10px', paddingRight: '10px', lineHeight: 1.5, marginTop: 10 }}>
-                <label style={{ fontSize: 13 }}>2. Tiempo de espera</label>
-                <div style={{ width: '100%', textAlign: 'center' }}><Rate onChange={(valor) => { this.setState({ frm_tiempo_espera: valor }, () => { this.enviarCalificacion() }) }} value={this.state.frm_tiempo_espera} style={{}} /></div>
-              </div>
-              <div style={{ width: '100%', paddingLeft: '10px', paddingRight: '10px', lineHeight: 1.5, marginTop: 10 }}>
-                <label style={{ fontSize: 13 }}>3. Amabilidad</label>
-                <div style={{ width: '100%', textAlign: 'center' }}><Rate onChange={(valor) => { this.setState({ frm_amabilidad: valor }, () => { this.enviarCalificacion() }) }} value={this.state.frm_amabilidad} style={{}} /></div>
-              </div>
-              <div style={{ width: '100%', paddingLeft: '10px', paddingRight: '10px', lineHeight: 1.5, marginTop: 10 }}>
-                <label style={{ fontSize: 13 }}>4. Conocimiento del procedimiento</label>
-                <div style={{ width: '100%', textAlign: 'center' }}><Rate onChange={(valor) => { this.setState({ frm_conocimiento: valor }, () => { this.enviarCalificacion() }) }} value={this.state.frm_conocimiento} style={{}} /></div>
-              </div>
+              {  this.state.ticket.calificacion.map( (res , i ) => {
+                return (
+                  <div key={i} style={{ width: '100%', paddingLeft: '10px', paddingRight: '10px', lineHeight: 1.5, marginTop: 10 }}>
+                    <label style={{ fontSize: 13 }}> { i+1 + '. ' + res.pregunta } </label>
+                    <div style={{ width: '100%', textAlign: 'center' }}>
+                      <Rate 
+                        onChange={(valor) => { 
+                          var calificacion = this.state.calificacion;
+                          calificacion[i] = { id_pregunta : res.id_pregunta , calificacion : valor };
+                          this.setState({calificacion : calificacion }, () => { this.enviarCalificacion() }) 
+                        }} 
+                        value={ ( this.state.calificacion[i] ) ? this.state.calificacion[i]['calificacion'] :  res.calificacion} style={{}} />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         }
@@ -500,26 +501,18 @@ class ver_ticket_abierta extends Component {
   }
 
   enviarCalificacion() {
-    if (parseInt(this.state.frm_calificacion_general) > 0 && parseInt(this.state.frm_tiempo_espera) > 0 && parseInt(this.state.frm_amabilidad) > 0 && parseInt(this.state.frm_conocimiento) > 0) {
+    const { calificacion , ticket } = this.state;
+    if ( calificacion.length == ticket.calificacion.length ) {
       let Server = String(this.props.Server)
       this.setState({ cargando: true })
       var data = new FormData();
-      data.append('nivel_satisfaccion', this.state.frm_calificacion_general);
-      data.append('tiempo_espera', this.state.frm_tiempo_espera);
-      data.append('amabilidad', this.state.frm_amabilidad);
-      data.append('conocimientos', this.state.frm_conocimiento);
-      data.append('id_usuario_ticket', this.state.ticket.id_usuario_ticket);
-
+      data.append('calificacion', JSON.stringify(calificacion) );
+      data.append('id_usuario_ticket', ticket.id_usuario_ticket );
       http._POST(Server + 'configuracion/ticket.php?accion=puntuar_ticket', data).then((res) => {
-        if (res !== 'error') {
-          this.setState({ cargando: false });
-          this.props.getTicketsAbiertas();
-          message.success("Calificación enviada!");
-          this.cargarTicket(this.state.ticket.id_usuario_ticket);
-        } else {
-          message.error("Error al enviar calificación.");
-          this.setState({ cargando: false });
-        }
+        this.setState({ cargando: false });
+        this.props.getTicketsAbiertas();
+        message.success("Calificación enviada!");
+        this.cargarTicket(this.state.ticket.id_usuario_ticket);       
       }).catch(err => {
         message.error("Error al enviar calificación." + err);
         this.setState({ cargando: false });

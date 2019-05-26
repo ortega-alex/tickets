@@ -299,7 +299,7 @@ class ItemTicket extends Component {
           </div>
         }
 
-        {(parseInt(ticket.estado) == 1 && !ticket.id_calificacion && modalidad == 'tickets_abiertas') &&
+        {(parseInt(ticket.estado) == 1 && ticket.calificacion == null  && modalidad == 'tickets_abiertas') &&
           <div style={{ display: 'flex', justifyContent: 'center', width: '100%', fontSize: 10, whiteSpace: 'pre-wrap' }}>
             <div style={{ backgroundColor: '#F4D03F', color: 'black', width: '55%', borderRadius: 4, padding: '1px' }}>
               ¡Pendiente de Calificar!
@@ -326,7 +326,7 @@ class ItemTicket extends Component {
             </div>
           </div>
 
-          {(parseInt(ticket.estado) == 0 || (!ticket.id_calificacion && modalidad == 'tickets_abiertas')) &&
+          {(parseInt(ticket.estado) == 0 || (ticket.calificacion == null && modalidad == 'tickets_abiertas')) &&
             <div style={{ padding: 5 }}>
               {(parseInt(ticket.estado) == 0) &&
                 <Progress strokeLinecap="square" type="circle" percent={parseInt((parseInt(ticket.total_fases_ticket - 1) * 100) / parseInt(ticket.total_fases))} width={50} />

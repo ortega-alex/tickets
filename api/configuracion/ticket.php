@@ -495,7 +495,9 @@ function notificar_nueva_ticket($id_ticket, $id_cargo, $con){
 	} 
 }
 
-if($_GET[accion]=='get_previsualizar_ticket'){
+if ( $_GET[accion] == 'get_previsualizar_ticket' ) {
+
+	$intIdUsuarioTicket = isset($_POST['id_usuario_ticket']) ? $_POST['id_usuario_ticket'] : 0;
 
 	//fases
 	$strQuery = "SELECT a.id_usuario_ticket , a.id_usuario_ticket_fase , a.id_fase , a.estado , a.fecha_inicio , a.fecha_fin,
@@ -505,7 +507,7 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 								FROM usuario_ticket_fase a 
 								INNER JOIN fase b ON a.id_fase = b.id_fase
 								LEFT JOIN usuario c ON a.id_tecnico = c.id_usuario  
-								WHERE a.id_usuario_ticket = {$_POST[id_usuario_ticket]}
+								WHERE a.id_usuario_ticket = {$intIdUsuarioTicket}
 								GROUP BY a.id_usuario_ticket_fase 
 								ORDER BY a.fecha_inicio ASC";
 	$qTemp = mysqli_query($con, $strQuery);
@@ -531,12 +533,13 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 	$fases_tickets= json_encode($rows_fases);
 
 	//mensajes
-	$strQuery = "SELECT men.id_mensaje, men.id_usuario, us.nombre_completo, men.mensaje, men.fecha, men.estado 
-							 FROM usuario_ticket ut, mensaje men, usuario us 
-							 WHERE ut.id_usuario_ticket=men.id_usuario_ticket 
-							 AND men.id_usuario=us.id_usuario 
-							 AND ut.id_usuario_ticket={$_POST[id_usuario_ticket]} 
-							 ORDER BY men.fecha ASC";
+	$strQuery = "SELECT  b.id_mensaje, b.id_usuario, b.mensaje, b.fecha, b.estado ,
+											 c.nombre_completo
+							 FROM usuario_ticket a 
+							 INNER JOIN mensaje b ON a.id_usuario_ticket = b.id_usuario_ticket
+							 INNER JOIN usuario c ON b.id_usuario = c.id_usuario
+						 	 WHERE a.id_usuario_ticket = {$intIdUsuarioTicket}
+							 ORDER BY b.fecha ASC";
 	$mensajes = mysqli_query($con, $strQuery);
 	$rows_mensajes = array();
 	while($r = mysqli_fetch_object($mensajes)) {
@@ -552,33 +555,50 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 
 	$mensajes_ticket= json_encode($rows_mensajes);
 	
-	$strQuery =  "SELECT c.categoria, sb.sub_categoria, t.nombre_ticket, t.procedimiento, t.descripcion, 
-											 ut.id_usuario_ticket, ut.nivel_prioridad, ut.creacion, ut.programada, 
-											 ut.fecha_programada, ut.info_adicional, ut.estado, ut.id_calificacion, ut.comentario_final ,
-											 us.username, us.username, us.nombre_completo , us.id_usuario , d.departamento, p.puesto   
-								FROM categoria c, sub_categoria sb, ticket t, usuario_ticket ut, usuario us,
-									   departamento_puesto dp, puesto p, departamento d 
-								WHERE c.id_categoria=sb.id_categoria 
-								AND sb.id_sub_categoria=t.id_sub_categoria 
-								AND t.id_ticket=ut.id_ticket 
-								AND ut.id_usuario=us.id_usuario 
-								AND us.id_usuario=dp.id_usuario 
-								AND dp.id_departamento=d.id_departamento 
-								AND dp.id_puesto=p.id_puesto 
-								AND ut.id_usuario_ticket={$_POST[id_usuario_ticket]} 
-								GROUP BY t.id_ticket LIMIT 1";
+	$strQuery =  "SELECT a.categoria ,
+											 b.sub_categoria ,
+										   c.nombre_ticket, c.procedimiento, c.descripcion ,
+									 	   d.id_usuario_ticket, d.nivel_prioridad, d.creacion, d.programada, d.fecha_programada, d.info_adicional, d.estado, d.comentario_final ,
+										   f.username, f.username, f.nombre_completo , f.id_usuario ,
+										   g.departamento ,
+										   h.puesto
+								FROM categoria a 
+								INNER JOIN sub_categoria b ON a.id_categoria = b.id_categoria
+								INNER JOIN ticket c ON b.id_sub_categoria = c.id_sub_categoria
+								INNER JOIN usuario_ticket d ON c.id_ticket = d.id_ticket
+								INNER JOIN departamento_puesto e ON d.id_cargo = e.id_cargo
+								INNER JOIN usuario f ON e.id_usuario = f.id_usuario
+								INNER JOIN departamento g ON e.id_departamento = g.id_departamento
+								INNER JOIN puesto h ON e.id_puesto = h.id_puesto 
+								AND d.id_usuario_ticket = {$intIdUsuarioTicket}";
 	$sql = mysqli_query($con, $strQuery);
 	$row = mysqli_fetch_object($sql);
 
 	$strQuery = "SELECT ruta , nombre
 							 FROM archivos_ticket 
-							 WHERE id_usuario_ticket ={$_POST[id_usuario_ticket]}";
+							 WHERE id_usuario_ticket ={$intIdUsuarioTicket}";
 	$qTmp = mysqli_query($con, $strQuery);
-	$arr = array();
+	$adjuntos = array();
 	while($rTmp = mysqli_fetch_object($qTmp)) {
-		$arr[] = array(
+		$adjuntos[] = array(
 			'nombre' => ($rTmp->nombre) ,
 			'ruta' => ($rTmp->ruta) ,	
+		);	
+	}	
+
+	$strQuery = "SELECT a.id_pregunta_calificacion AS id_pregunta , a.pregunta ,
+										  b.id_pregunta_calificacion , b.calificacion 
+							 FROM pregunta_calificacion a
+							 LEFT JOIN calificacion_ticket b ON a.id_pregunta_calificacion = b.id_pregunta_calificacion AND b.id_usuario_ticket = {$intIdUsuarioTicket}
+							 AND a.estado = 1";
+	$qTmp = mysqli_query($con, $strQuery);
+	$calificacion = array();
+	while($rTmp = mysqli_fetch_object($qTmp)) {
+		$calificacion[] = array(
+			'id_pregunta_calificacion' => ($rTmp->id_pregunta_calificacion) ,
+			'calificacion' => ($rTmp->calificacion) ,	
+			'id_pregunta' => ($rTmp->id_pregunta) ,	
+			'pregunta' => ($rTmp->pregunta) ,	
 		);	
 	}	
 
@@ -600,10 +620,10 @@ if($_GET[accion]=='get_previsualizar_ticket'){
 	$jsondata['estado'] = $row->estado;
 	$jsondata['id_calificacion'] = $row->id_calificacion;
 	$jsondata['comentario_final'] = $row->comentario_final;
-	$jsondata['calificacion'] = (json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM calificacion_ticket WHERE id_calificacion=$row->id_calificacion "))) );
+	$jsondata['calificacion'] = $calificacion; //(json_encode(mysqli_fetch_object(mysqli_query($con, "SELECT * FROM calificacion_ticket WHERE id_calificacion=$row->id_calificacion "))) );
 	$jsondata['fases'] = $fases_tickets;
 	$jsondata['mensajes'] = $mensajes_ticket;
-	$jsondata['archivos'] = $arr;
+	$jsondata['archivos'] = $adjuntos;
 	$jsondata['id_usuario'] = $row->id_usuario;
 
 	echo json_encode($jsondata);
@@ -682,29 +702,14 @@ if ( $_GET[accion] == 'siguiente_fase' ) {
 	fasesPorTicket($intIdFase , $intIdUsuarioTicket , $con , $intIdUsuario , $strDescripcion);
 }
 
-if($_GET[accion]=='puntuar_ticket'){
-
-	$sql = mysqli_query($con, "INSERT INTO calificacion_ticket(nivel_satisfaccion, tiempo_espera, amabilidad, conocimientos) VALUES('$_POST[nivel_satisfaccion]', '$_POST[tiempo_espera]', '$_POST[amabilidad]', '$_POST[conocimientos]')" );
-
-	if($sql){
-	 	
-	 	$lastid=mysqli_insert_id($con);
-
-	  	$sqls = mysqli_query($con, "UPDATE usuario_ticket SET id_calificacion='$lastid' WHERE id_usuario_ticket='$_POST[id_usuario_ticket]'" );
-
-		if($sqls){
-		  echo json_encode("Ok");
-		}else{
-		  echo json_encode("error");
-		}
-
-
-	}else{
-	  echo json_encode("error");
+if ( $_GET[accion] == 'puntuar_ticket' ) {
+	$arrCalificacion = isset($_POST['calificacion']) ? json_decode( $_POST['calificacion'] , true ) : array();
+	$intIdUsuarioTicket = isset($_POST['id_usuario_ticket']) ? intval($_POST['id_usuario_ticket']) : 0;
+	foreach ($arrCalificacion as $key => $val) {
+		$strQuery = "INSERT INTO calificacion_ticket ( id_usuario_ticket , id_pregunta_calificacion , calificacion) 
+								 VALUES ( {$intIdUsuarioTicket} , {$val['id_pregunta']} , {$val['calificacion']}  )";
+		mysqli_query($con , $strQuery);
 	}
-
-
-	
 }
 
 if($_GET[accion]=='get_soporte_compatible'){

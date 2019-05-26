@@ -582,11 +582,11 @@ if ( $_GET[accion] == 'get_ticket_por_usuario' ) {
 if ( $_GET[accion] == 'get_tickets_abiertas_usuario' ) {
 	$intRol = isset($_POST['rol']) ? intval($_POST['rol']) : 0;
 	if ( $intRol <= 1 ) {
-		$_WHERE = "WHERE b.id_usuario = {$_POST['id_usuario']}";
+		$_AND = "WHERE b.id_usuario = {$_POST['id_usuario']}";
 	}
 
 	if ( $intRol == 2 ) {
-		$_WHERE = "WHERE d.id_departamento IN (SELECT b.id_departamento 
+		$_AND = "WHERE d.id_departamento IN (SELECT b.id_departamento 
 											   FROM usuario a
 											   INNER JOIN departamento_puesto b ON a.id_usuario = b.id_usuario
 											   WHERE a.id_usuario = {$_POST['id_usuario']}
@@ -594,20 +594,23 @@ if ( $_GET[accion] == 'get_tickets_abiertas_usuario' ) {
 	}
 
 	$strQuery = "SELECT a.nombre_completo  ,
-						b.id_usuario_ticket,  b.nivel_prioridad, b.creacion, b.programada, b.fecha_programada, b.info_adicional , b.correlativo , 
-						b.estado, b.id_calificacion ,
-						c.id_ticket,   c.nombre_ticket,   c.descripcion, 
-						e.departamento ,
-						f.puesto,
-						IF ( b.id_tecnico IS NULL , 'Sin Asignar' ,   g.nombre_completo  ) AS nombre_tecnico
+					b.id_usuario_ticket,  b.nivel_prioridad, b.creacion, b.programada, b.fecha_programada, b.info_adicional , b.correlativo , 
+					b.estado,
+					c.id_ticket,   c.nombre_ticket,   c.descripcion, 
+					e.departamento ,
+					f.puesto,
+					IF ( b.id_tecnico IS NULL , 'Sin Asignar' ,   g.nombre_completo  ) AS nombre_tecnico ,
+					h.calificacion
 				FROM usuario a 
-				INNER JOIN usuario_ticket b ON a.id_usuario = b.id_usuario AND b.id_calificacion IS NULL 
+				INNER JOIN usuario_ticket b ON a.id_usuario = b.id_usuario 
 				INNER JOIN ticket c ON b.id_ticket = c.id_ticket 
 				INNER JOIN departamento_puesto d ON b.id_cargo = d.id_cargo
 				INNER JOIN departamento e ON d.id_departamento = e.id_departamento 
 				INNER JOIN puesto f ON d.id_puesto = f.id_puesto 
 				LEFT JOIN usuario g ON b.id_tecnico = g.id_usuario
-				{$_WHERE}
+				LEFT JOIN calificacion_ticket h ON b.id_usuario_ticket = h.id_usuario_ticket
+				WHERE h.calificacion IS NULL
+				{$_AND}
 				GROUP BY b.id_usuario_ticket
 				ORDER BY b.creacion DESC";
 
@@ -645,7 +648,8 @@ if ( $_GET[accion] == 'get_tickets_abiertas_usuario' ) {
 			'nombre_completo'=>($v->nombre_completo),
 			'fase_ticket'=>(fase_ticket($v->id_usuario_ticket, $con)),
 			'nombre_tecnico'=>($v->nombre_tecnico),
-			'correlativo'=>($v->correlativo)
+			'correlativo'=>($v->correlativo),
+			'calificacion'=>($v->calificacion),
 		);
 	}
 	echo json_encode($results);
